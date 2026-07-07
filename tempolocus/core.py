@@ -36,22 +36,52 @@ OFFSET_LABELS: dict[int, tuple[str, list[str]]] = {
     -8: ("UTC-08 Pacific North America", ["America/Los_Angeles", "America/Vancouver"]),
     -7: ("UTC-07 Mountain North America", ["America/Denver", "America/Phoenix"]),
     -6: ("UTC-06 Central North America", ["America/Chicago", "America/Mexico_City"]),
-    -5: ("UTC-05 Eastern North America / Andean", ["America/New_York", "America/Toronto", "America/Bogota"]),
-    -4: ("UTC-04 Atlantic / western South America", ["America/Halifax", "America/Santiago", "America/Caracas"]),
-    -3: ("UTC-03 Argentina / eastern Brazil", ["America/Argentina/Buenos_Aires", "America/Sao_Paulo"]),
+    -5: (
+        "UTC-05 Eastern North America / Andean",
+        ["America/New_York", "America/Toronto", "America/Bogota"],
+    ),
+    -4: (
+        "UTC-04 Atlantic / western South America",
+        ["America/Halifax", "America/Santiago", "America/Caracas"],
+    ),
+    -3: (
+        "UTC-03 Argentina / eastern Brazil",
+        ["America/Argentina/Buenos_Aires", "America/Sao_Paulo"],
+    ),
     -2: ("UTC-02 Mid-Atlantic", ["Atlantic/South_Georgia"]),
     -1: ("UTC-01 Azores / Cape Verde", ["Atlantic/Azores", "Atlantic/Cape_Verde"]),
-    0: ("UTC+00 Western Europe / West Africa", ["Europe/London", "Europe/Dublin", "Africa/Accra"]),
-    1: ("UTC+01 Central Europe / West Africa", ["Europe/Paris", "Europe/Berlin", "Africa/Lagos"]),
-    2: ("UTC+02 Eastern Europe / southern Africa", ["Europe/Athens", "Europe/Helsinki", "Africa/Johannesburg"]),
-    3: ("UTC+03 East Africa / Arabia / Moscow", ["Europe/Moscow", "Asia/Riyadh", "Africa/Nairobi"]),
+    0: (
+        "UTC+00 Western Europe / West Africa",
+        ["Europe/London", "Europe/Dublin", "Africa/Accra"],
+    ),
+    1: (
+        "UTC+01 Central Europe / West Africa",
+        ["Europe/Paris", "Europe/Berlin", "Africa/Lagos"],
+    ),
+    2: (
+        "UTC+02 Eastern Europe / southern Africa",
+        ["Europe/Athens", "Europe/Helsinki", "Africa/Johannesburg"],
+    ),
+    3: (
+        "UTC+03 East Africa / Arabia / Moscow",
+        ["Europe/Moscow", "Asia/Riyadh", "Africa/Nairobi"],
+    ),
     4: ("UTC+04 Gulf / Caucasus", ["Asia/Dubai", "Asia/Baku", "Indian/Mauritius"]),
     5: ("UTC+05 Pakistan / western Central Asia", ["Asia/Karachi", "Asia/Tashkent"]),
     6: ("UTC+06 Bangladesh / central Asia", ["Asia/Dhaka", "Asia/Almaty"]),
-    7: ("UTC+07 mainland Southeast Asia", ["Asia/Bangkok", "Asia/Jakarta", "Asia/Ho_Chi_Minh"]),
-    8: ("UTC+08 China / Singapore / Western Australia", ["Asia/Shanghai", "Asia/Singapore", "Australia/Perth"]),
+    7: (
+        "UTC+07 mainland Southeast Asia",
+        ["Asia/Bangkok", "Asia/Jakarta", "Asia/Ho_Chi_Minh"],
+    ),
+    8: (
+        "UTC+08 China / Singapore / Western Australia",
+        ["Asia/Shanghai", "Asia/Singapore", "Australia/Perth"],
+    ),
     9: ("UTC+09 Japan / Korea", ["Asia/Tokyo", "Asia/Seoul"]),
-    10: ("UTC+10 eastern Australia / western Pacific", ["Australia/Sydney", "Pacific/Guam"]),
+    10: (
+        "UTC+10 eastern Australia / western Pacific",
+        ["Australia/Sydney", "Pacific/Guam"],
+    ),
     11: ("UTC+11 western Pacific", ["Pacific/Noumea", "Asia/Magadan"]),
     12: ("UTC+12 New Zealand / Fiji", ["Pacific/Auckland", "Pacific/Fiji"]),
     13: ("UTC+13 Samoa / Tonga", ["Pacific/Apia", "Pacific/Tongatapu"]),
@@ -108,7 +138,10 @@ def detect(
 
 def _detect_kind(data: Any) -> str:
     if isinstance(data, list) and data:
-        if all(isinstance(item, dict) and {"day", "hour", "count"} <= set(item) for item in data):
+        if all(
+            isinstance(item, dict) and {"day", "hour", "count"} <= set(item)
+            for item in data
+        ):
             return "weekly"
     if isinstance(data, dict) and isinstance(data.get("nb"), list):
         return "yearly"
@@ -134,7 +167,13 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
 
     candidates = []
     for offset in range(-12, 15):
-        profile = sum(count * LOCAL_ACTIVITY_PROFILE[(hour + offset) % 24] for hour, count in enumerate(hourly)) / total
+        profile = (
+            sum(
+                count * LOCAL_ACTIVITY_PROFILE[(hour + offset) % 24]
+                for hour, count in enumerate(hourly)
+            )
+            / total
+        )
         local_quiet_center = (quiet_center + offset) % 24
         sleep_distance = _circular_distance(local_quiet_center, 2.5, 24)
         sleep_score = math.exp(-((sleep_distance / 3.8) ** 2))
@@ -150,7 +189,9 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
                 "score": raw_score,
                 "evidence": {
                     "utc_quiet_window": _format_hour_window(quiet_start, 6),
-                    "local_quiet_window": _format_hour_window((quiet_start + offset) % 24, 6),
+                    "local_quiet_window": _format_hour_window(
+                        (quiet_start + offset) % 24, 6
+                    ),
                     "quiet_activity_ratio": round(quiet_ratio, 3),
                     "local_quiet_center": round(local_quiet_center, 2),
                 },
@@ -201,7 +242,9 @@ def infer_yearly(
     for region_id, label, holidays in _candidate_holidays(
         first_day.year, include_public_worker=(holiday_profile == "public-worker")
     ).values():
-        relevant = [holiday for holiday in holidays if first_day <= holiday.day <= last_day]
+        relevant = [
+            holiday for holiday in holidays if first_day <= holiday.day <= last_day
+        ]
         if not relevant:
             continue
 
@@ -211,7 +254,9 @@ def infer_yearly(
         signal = "holiday_spike" if spike_score >= drop_score else "holiday_drop"
         signal_score = max(spike_score, drop_score)
 
-        top_dates = _top_fraction(percentiles, fraction=0.10, high=(signal == "holiday_spike"))
+        top_dates = _top_fraction(
+            percentiles, fraction=0.10, high=(signal == "holiday_spike")
+        )
         holiday_days = {holiday.day for holiday in relevant}
         hits = sorted(day for day in top_dates if day in holiday_days)
         expected = max(0.001, len(holiday_days) / len(full_series))
@@ -231,7 +276,11 @@ def infer_yearly(
                 "signal": signal,
                 "evidence": {
                     "matched_holidays": [
-                        {"date": day.isoformat(), "count": full_series[day], "name": _holiday_name(day, relevant)}
+                        {
+                            "date": day.isoformat(),
+                            "count": full_series[day],
+                            "name": _holiday_name(day, relevant),
+                        }
                         for day in hits[:6]
                     ],
                     "holiday_dates_seen": len(relevant),
@@ -241,7 +290,9 @@ def infer_yearly(
         )
 
     if not candidates:
-        raise DetectionError("no yearly candidates could be evaluated for the observed date range")
+        raise DetectionError(
+            "no yearly candidates could be evaluated for the observed date range"
+        )
 
     _attach_probabilities(candidates, temperature=7.0)
     candidates.sort(key=lambda item: item["probability"], reverse=True)
@@ -250,9 +301,11 @@ def infer_yearly(
         "confidence": _distribution_confidence(candidates),
         "assumptions": [
             "Daily buckets are compared with representative public-holiday calendars.",
-            "The public-worker holiday profile adds public-sector closure days where they are distinct from general public holidays."
-            if holiday_profile == "public-worker"
-            else "Only general public holidays are used unless the public-worker holiday profile is requested.",
+            (
+                "The public-worker holiday profile adds public-sector closure days where they are distinct from general public holidays."
+                if holiday_profile == "public-worker"
+                else "Only general public holidays are used unless the public-worker holiday profile is requested."
+            ),
             "The model accepts either spikes or drops on holidays because datasets can represent attention, publication, or work activity.",
             "This first implementation ranks broad regions; it is not a legal or forensic geolocation result.",
         ],
@@ -280,7 +333,9 @@ def _parse_weekly_rows(data: Any) -> list[tuple[int, int, float]]:
             hour = int(item["hour"])
             count = float(item["count"])
         except (KeyError, TypeError, ValueError) as exc:
-            raise DetectionError(f"weekly row {index} must contain numeric day, hour, and count") from exc
+            raise DetectionError(
+                f"weekly row {index} must contain numeric day, hour, and count"
+            ) from exc
         if not 0 <= day <= 6:
             raise DetectionError(f"weekly row {index} has invalid day: {day}")
         if not 0 <= hour <= 23:
@@ -302,7 +357,9 @@ def _parse_yearly_rows(data: Any) -> dict[date, float]:
             day = date.fromisoformat(row[0])
             count = float(row[1])
         except (TypeError, ValueError) as exc:
-            raise DetectionError(f"yearly row {index} contains an invalid date or count") from exc
+            raise DetectionError(
+                f"yearly row {index} contains an invalid date or count"
+            ) from exc
         if count < 0:
             raise DetectionError(f"yearly row {index} has negative count")
         observed[day] = observed.get(day, 0.0) + count
@@ -357,7 +414,9 @@ def _distribution_confidence(items: list[dict[str, Any]]) -> float:
     return round(min(1.0, confidence), 6)
 
 
-def _fill_dates(observed: dict[date, float], start: date, end: date) -> dict[date, float]:
+def _fill_dates(
+    observed: dict[date, float], start: date, end: date
+) -> dict[date, float]:
     series = {}
     current = start
     while current <= end:
@@ -370,15 +429,21 @@ def _percentiles(series: dict[date, float]) -> dict[date, float]:
     ordered = sorted(series.items(), key=lambda item: (item[1], item[0]))
     if len(ordered) == 1:
         return {ordered[0][0]: 1.0}
-    return {day: rank / (len(ordered) - 1) for rank, (day, _count) in enumerate(ordered)}
+    return {
+        day: rank / (len(ordered) - 1) for rank, (day, _count) in enumerate(ordered)
+    }
 
 
-def _top_fraction(percentiles: dict[date, float], fraction: float, high: bool) -> set[date]:
+def _top_fraction(
+    percentiles: dict[date, float], fraction: float, high: bool
+) -> set[date]:
     count = max(1, round(len(percentiles) * fraction))
     reverse = high
     return {
         day
-        for day, _value in sorted(percentiles.items(), key=lambda item: item[1], reverse=reverse)[:count]
+        for day, _value in sorted(
+            percentiles.items(), key=lambda item: item[1], reverse=reverse
+        )[:count]
     }
 
 
@@ -391,6 +456,7 @@ def _candidate_holidays(
     year: int, include_public_worker: bool = False
 ) -> dict[str, tuple[str, str, list[Holiday]]]:
     easter = _easter_sunday(year)
+    orthodox_easter = _orthodox_easter_sunday(year)
     candidates = {
         "US": ("US", "United States", _us_holidays(year)),
         "CA": ("CA", "Canada", _canada_holidays(year, easter)),
@@ -409,8 +475,12 @@ def _candidate_holidays(
         "CZ": ("CZ", "Czechia", _czechia_holidays(year, easter)),
         "SK": ("SK", "Slovakia", _slovakia_holidays(year, easter)),
         "HU": ("HU", "Hungary", _hungary_holidays(year, easter)),
-        "RO": ("RO", "Romania", _romania_holidays(year, easter)),
-        "GR": ("GR", "Greece", _greece_holidays(year, easter)),
+        "RO": ("RO", "Romania", _romania_holidays(year, orthodox_easter)),
+        "GR": ("GR", "Greece", _greece_holidays(year, orthodox_easter)),
+        "BG": ("BG", "Bulgaria", _bulgaria_holidays(year, orthodox_easter)),
+        "RS": ("RS", "Serbia", _serbia_holidays(year, orthodox_easter)),
+        "UA": ("UA", "Ukraine", _ukraine_holidays(year, orthodox_easter)),
+        "RU": ("RU", "Russia", _russia_holidays(year, orthodox_easter)),
         "DK": ("DK", "Denmark", _denmark_holidays(year, easter)),
         "NO": ("NO", "Norway", _norway_holidays(year, easter)),
         "SE": ("SE", "Sweden", _sweden_holidays(year, easter)),
@@ -476,6 +546,22 @@ def _public_worker_holiday_candidates(
                 ],
             ),
         ),
+        "CN-PUBLIC-WORKER": (
+            "CN-PUBLIC-WORKER",
+            "China public-sector worker",
+            _merge_holidays(
+                standard["CN"][2],
+                _china_public_worker_holidays(year),
+            ),
+        ),
+        "RU-PUBLIC-WORKER": (
+            "RU-PUBLIC-WORKER",
+            "Russia public-sector worker",
+            _merge_holidays(
+                standard["RU"][2],
+                _russia_public_worker_holidays(year),
+            ),
+        ),
     }
 
 
@@ -508,6 +594,18 @@ def _last_weekday(year: int, month: int, weekday: int, name: str) -> Holiday:
     while current.weekday() != weekday:
         current -= timedelta(days=1)
     return Holiday(current, name)
+
+
+def _orthodox_easter_sunday(year: int) -> date:
+    """Return Orthodox Easter Sunday in the Gregorian calendar."""
+    a = year % 4
+    b = year % 7
+    c = year % 19
+    d = (19 * c + 15) % 30
+    e = (2 * a + 4 * b - d + 34) % 7
+    month = (d + e + 114) // 31
+    day = ((d + e + 114) % 31) + 1
+    return date(year, month, day) + timedelta(days=13)
 
 
 def _easter_sunday(year: int) -> date:
@@ -824,6 +922,71 @@ def _greece_holidays(year: int, easter: date) -> list[Holiday]:
     ]
 
 
+def _bulgaria_holidays(year: int, orthodox_easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 3, 3, "Liberation Day"),
+        _relative(orthodox_easter, -2, "Orthodox Good Friday"),
+        _relative(orthodox_easter, -1, "Orthodox Holy Saturday"),
+        Holiday(orthodox_easter, "Orthodox Easter Sunday"),
+        _relative(orthodox_easter, 1, "Orthodox Easter Monday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 5, 6, "Saint George's Day"),
+        _fixed(year, 5, 24, "Culture and Literacy Day"),
+        _fixed(year, 9, 6, "Unification Day"),
+        _fixed(year, 9, 22, "Independence Day"),
+        _fixed(year, 12, 24, "Christmas Eve"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 26, "Second Day of Christmas"),
+    ]
+
+
+def _serbia_holidays(year: int, orthodox_easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 1, 2, "Second New Year's Day"),
+        _fixed(year, 1, 7, "Orthodox Christmas Day"),
+        _fixed(year, 2, 15, "Statehood Day"),
+        _fixed(year, 2, 16, "Second Statehood Day"),
+        _relative(orthodox_easter, -2, "Orthodox Good Friday"),
+        Holiday(orthodox_easter, "Orthodox Easter Sunday"),
+        _relative(orthodox_easter, 1, "Orthodox Easter Monday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 5, 2, "Second Labour Day"),
+        _fixed(year, 11, 11, "Armistice Day"),
+    ]
+
+
+def _ukraine_holidays(year: int, orthodox_easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 1, 7, "Orthodox Christmas Day"),
+        _fixed(year, 3, 8, "International Women's Day"),
+        Holiday(orthodox_easter, "Orthodox Easter Sunday"),
+        _relative(orthodox_easter, 49, "Orthodox Pentecost"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 5, 8, "Day of Remembrance and Victory"),
+        _fixed(year, 6, 28, "Constitution Day"),
+        _fixed(year, 8, 24, "Independence Day"),
+        _fixed(year, 10, 14, "Defenders Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
+def _russia_holidays(year: int, orthodox_easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 1, 7, "Orthodox Christmas Day"),
+        _fixed(year, 2, 23, "Defender of the Fatherland Day"),
+        _fixed(year, 3, 8, "International Women's Day"),
+        Holiday(orthodox_easter, "Orthodox Easter Sunday"),
+        _fixed(year, 5, 1, "Spring and Labour Day"),
+        _fixed(year, 5, 9, "Victory Day"),
+        _fixed(year, 6, 12, "Russia Day"),
+        _fixed(year, 11, 4, "Unity Day"),
+    ]
+
+
 def _denmark_holidays(year: int, easter: date) -> list[Holiday]:
     return [
         _fixed(year, 1, 1, "New Year's Day"),
@@ -921,6 +1084,70 @@ def _china_holidays(year: int) -> list[Holiday]:
         _fixed(year, 5, 1, "Labour Day"),
         _fixed(year, 10, 1, "National Day"),
     ]
+
+
+def _china_public_worker_holidays(year: int) -> list[Holiday]:
+    holidays = [
+        _fixed(year, 4, 5, "Qingming Festival / public-sector closure"),
+        _fixed(year, 5, 2, "Labour Day Golden Week / public-sector closure"),
+        _fixed(year, 5, 3, "Labour Day Golden Week / public-sector closure"),
+        _fixed(year, 10, 2, "National Day Golden Week / public-sector closure"),
+        _fixed(year, 10, 3, "National Day Golden Week / public-sector closure"),
+        _fixed(year, 10, 4, "National Day Golden Week / public-sector closure"),
+        _fixed(year, 10, 5, "National Day Golden Week / public-sector closure"),
+        _fixed(year, 10, 6, "National Day Golden Week / public-sector closure"),
+        _fixed(year, 10, 7, "National Day Golden Week / public-sector closure"),
+    ]
+    if lunar_new_year := _chinese_new_year(year):
+        holidays.extend(
+            Holiday(
+                lunar_new_year + timedelta(days=offset),
+                "Spring Festival / public-sector closure",
+            )
+            for offset in range(7)
+        )
+    return holidays
+
+
+def _russia_public_worker_holidays(year: int) -> list[Holiday]:
+    return [
+        _fixed(year, 1, day, "New Year holidays / public-sector closure")
+        for day in range(2, 9)
+    ] + [
+        _fixed(
+            year, 2, 22, "Defender of the Fatherland bridge day / public-sector closure"
+        ),
+        _fixed(
+            year, 3, 7, "International Women's Day bridge day / public-sector closure"
+        ),
+        _fixed(year, 5, 2, "May holidays / public-sector closure"),
+        _fixed(year, 5, 3, "May holidays / public-sector closure"),
+        _fixed(year, 5, 10, "Victory Day bridge day / public-sector closure"),
+        _fixed(year, 11, 3, "Unity Day bridge day / public-sector closure"),
+        _fixed(year, 12, 31, "New Year's Eve / public-sector closure"),
+    ]
+
+
+def _chinese_new_year(year: int) -> date | None:
+    dates = {
+        2018: (2, 16),
+        2019: (2, 5),
+        2020: (1, 25),
+        2021: (2, 12),
+        2022: (2, 1),
+        2023: (1, 22),
+        2024: (2, 10),
+        2025: (1, 29),
+        2026: (2, 17),
+        2027: (2, 6),
+        2028: (1, 26),
+        2029: (2, 13),
+        2030: (2, 3),
+    }
+    if year not in dates:
+        return None
+    month, day = dates[year]
+    return date(year, month, day)
 
 
 def _india_holidays(year: int) -> list[Holiday]:

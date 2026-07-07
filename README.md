@@ -47,6 +47,28 @@ why the activity occurred.
 This is a heuristic first pass. Weekly data cannot uniquely identify an IANA
 timezone without dates, and yearly data is sensitive to the meaning of the
 activity counter.
+## Example 
+
+~~~json
+python3 -m tempolocus samples/weekfull-chan1.json --format text  -n 5 --holiday-profile public-worker 
+input_type: weekly_timeseries
+confidence: 0.220
+activity_type: mixed-time (0.009)
+assumptions:
+  - Hourly buckets are interpreted as UTC; timezone candidates are offsets that make the activity look locally human.
+  - Weekly data cannot distinguish all IANA zones sharing the same offset, and daylight saving time is not inferable without dates.
+results:
+  0.208  timezone: UTC+05 Pakistan / western Central Asia
+          utc_quiet_window=19:00-01:00; local_quiet_window=00:00-06:00; quiet_activity_ratio=0.366; local_quiet_center=2.5
+  0.196  timezone: UTC+04 Gulf / Caucasus
+          utc_quiet_window=19:00-01:00; local_quiet_window=23:00-05:00; quiet_activity_ratio=0.366; local_quiet_center=1.5
+  0.143  timezone: UTC+06 Bangladesh / central Asia
+          utc_quiet_window=19:00-01:00; local_quiet_window=01:00-07:00; quiet_activity_ratio=0.366; local_quiet_center=3.5
+  0.129  timezone: UTC+03 East Africa / Arabia / Moscow
+          utc_quiet_window=19:00-01:00; local_quiet_window=22:00-04:00; quiet_activity_ratio=0.366; local_quiet_center=0.5
+  0.072  timezone: UTC+02 Eastern Europe / southern Africa
+          utc_quiet_window=19:00-01:00; local_quiet_window=21:00-03:00; quiet_activity_ratio=0.366; local_quiet_center=23.5
+~~~
 
 ## License
 

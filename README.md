@@ -2,7 +2,7 @@
 
 tempolocus look at time-series activity patterns to approximate a location inference.
 
-## First Python implementation
+## Using tempolocus 
 
 `tempolocus` accepts two JSON shapes:
 

@@ -123,7 +123,11 @@ def load_json(path: str | Path) -> Any:
 
 
 def detect(
-    data: Any, kind: str = "auto", top: int = 5, holiday_profile: str = "standard"
+    data: Any,
+    kind: str = "auto",
+    top: int = 5,
+    holiday_profile: str = "standard",
+    activity_signal: str = "lack",
 ) -> dict[str, Any]:
     if top < 1:
         raise DetectionError("top must be >= 1")
@@ -132,7 +136,12 @@ def detect(
     if detected == "weekly":
         return infer_weekly(data, top=top)
     if detected == "yearly":
-        return infer_yearly(data, top=top, holiday_profile=holiday_profile)
+        return infer_yearly(
+            data,
+            top=top,
+            holiday_profile=holiday_profile,
+            activity_signal=activity_signal,
+        )
     raise DetectionError(f"unsupported input kind: {detected}")
 
 
@@ -222,10 +231,15 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
 
 
 def infer_yearly(
-    data: Any, top: int = 5, holiday_profile: str = "standard"
+    data: Any,
+    top: int = 5,
+    holiday_profile: str = "standard",
+    activity_signal: str = "lack",
 ) -> dict[str, Any]:
     if holiday_profile not in {"standard", "public-worker"}:
         raise DetectionError("holiday_profile must be standard or public-worker")
+    if activity_signal not in {"lack", "peak"}:
+        raise DetectionError("activity_signal must be lack or peak")
 
     observed = _parse_yearly_rows(data)
     if not observed:
@@ -249,13 +263,14 @@ def infer_yearly(
             continue
 
         holiday_percentiles = [percentiles[holiday.day] for holiday in relevant]
-        spike_score = mean(holiday_percentiles)
-        drop_score = mean(1.0 - value for value in holiday_percentiles)
-        signal = "holiday_spike" if spike_score >= drop_score else "holiday_drop"
-        signal_score = max(spike_score, drop_score)
+        signal = "holiday_drop" if activity_signal == "lack" else "holiday_spike"
+        signal_score = mean(
+            1.0 - value if activity_signal == "lack" else value
+            for value in holiday_percentiles
+        )
 
         top_dates = _top_fraction(
-            percentiles, fraction=0.10, high=(signal == "holiday_spike")
+            percentiles, fraction=0.10, high=(activity_signal == "peak")
         )
         holiday_days = {holiday.day for holiday in relevant}
         hits = sorted(day for day in top_dates if day in holiday_days)
@@ -306,7 +321,11 @@ def infer_yearly(
                 if holiday_profile == "public-worker"
                 else "Only general public holidays are used unless the public-worker holiday profile is requested."
             ),
-            "The model accepts either spikes or drops on holidays because datasets can represent attention, publication, or work activity.",
+            (
+                "Yearly holiday matching treats low-count days as the signal; pass activity_signal='peak' if high-count days are meaningful."
+                if activity_signal == "lack"
+                else "Yearly holiday matching treats high-count days as the signal; use activity_signal='lack' for closure or inactivity patterns."
+            ),
             "This first implementation ranks broad regions; it is not a legal or forensic geolocation result.",
         ],
         "signals": {
@@ -316,6 +335,7 @@ def infer_yearly(
             "median_daily_activity": baseline,
             "max_daily_activity": max(counts),
             "holiday_profile": holiday_profile,
+            "activity_signal": activity_signal,
         },
         "results": candidates[:top],
     }

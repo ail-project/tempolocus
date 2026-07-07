@@ -103,3 +103,46 @@ def test_yearly_activity_signal_can_match_activity_peaks():
 
     assert result["signals"]["activity_signal"] == "peak"
     assert {item["signal"] for item in result["results"]} == {"holiday_spike"}
+
+
+def test_weekly_analysis_classifies_work_time():
+    data = []
+    for day in range(7):
+        for hour in range(24):
+            count = 10 if day <= 4 and 9 <= hour <= 16 else 1
+            data.append({"day": day, "hour": hour, "count": count})
+
+    result = detect(data, kind="weekly")
+
+    assert result["analysis"]["activity_type"] == "work-time"
+    assert (
+        result["analysis"]["shares"]["work_time"]
+        > result["analysis"]["shares"]["vacation_time"]
+    )
+
+
+def test_weekly_analysis_classifies_vacation_time():
+    data = []
+    for day in range(7):
+        for hour in range(24):
+            count = 10 if day >= 5 or hour >= 18 else 1
+            data.append({"day": day, "hour": hour, "count": count})
+
+    result = detect(data, kind="weekly")
+
+    assert result["analysis"]["activity_type"] == "vacation-time"
+    assert (
+        result["analysis"]["shares"]["vacation_time"]
+        > result["analysis"]["shares"]["work_time"]
+    )
+
+
+def test_weekly_analysis_classifies_mixed_time():
+    data = []
+    for day in range(7):
+        for hour in range(24):
+            data.append({"day": day, "hour": hour, "count": 1})
+
+    result = detect(data, kind="weekly")
+
+    assert result["analysis"]["activity_type"] == "mixed-time"

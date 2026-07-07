@@ -47,3 +47,8 @@ why the activity occurred.
 This is a heuristic first pass. Weekly data cannot uniquely identify an IANA
 timezone without dates, and yearly data is sensitive to the meaning of the
 activity counter.
+
+## License
+
+This project is licensed under the GNU Affero General Public License v3.0 or
+later. See [LICENSE](LICENSE) for details.

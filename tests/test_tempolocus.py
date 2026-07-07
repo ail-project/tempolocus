@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from tempolocus import detect
-
+from tempolocus.core import _candidate_holidays
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -51,3 +51,41 @@ def test_standard_holiday_profile_omits_public_worker_references():
 
     ids = {item["id"] for item in result["results"]}
     assert "US-PUBLIC-WORKER" not in ids
+
+
+def test_standard_holiday_profile_includes_orthodox_regions():
+    candidates = _candidate_holidays(2024)
+
+    assert {"BG", "RS", "UA", "RU"} <= set(candidates)
+    assert any(
+        holiday.day.isoformat() == "2024-05-05"
+        and holiday.name == "Orthodox Easter Sunday"
+        for holiday in candidates["RU"][2]
+    )
+
+
+def test_public_worker_holiday_profile_adds_china_and_russia_references():
+    result = detect(load_sample("year.json"), top=50, holiday_profile="public-worker")
+
+    ids = {item["id"] for item in result["results"]}
+    assert "CN-PUBLIC-WORKER" in ids
+    assert "RU-PUBLIC-WORKER" in ids
+
+
+def test_china_public_worker_profile_includes_spring_festival_window():
+    candidates = _candidate_holidays(2026, include_public_worker=True)
+    dates = {
+        holiday.day.isoformat()
+        for holiday in candidates["CN-PUBLIC-WORKER"][2]
+        if "Spring Festival" in holiday.name
+    }
+
+    assert dates == {
+        "2026-02-17",
+        "2026-02-18",
+        "2026-02-19",
+        "2026-02-20",
+        "2026-02-21",
+        "2026-02-22",
+        "2026-02-23",
+    }

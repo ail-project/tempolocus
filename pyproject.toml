@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Guess likely timezone or region from temporal JSON activity."
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "BSD-2-Clause"}
+license = {text = "AGPL-3.0-or-later"}
 authors = [{name = "tempolocus contributors"}]
 dependencies = []
 

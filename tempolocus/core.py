@@ -92,7 +92,9 @@ def load_json(path: str | Path) -> Any:
         return json.load(handle)
 
 
-def detect(data: Any, kind: str = "auto", top: int = 5) -> dict[str, Any]:
+def detect(
+    data: Any, kind: str = "auto", top: int = 5, holiday_profile: str = "standard"
+) -> dict[str, Any]:
     if top < 1:
         raise DetectionError("top must be >= 1")
 
@@ -100,7 +102,7 @@ def detect(data: Any, kind: str = "auto", top: int = 5) -> dict[str, Any]:
     if detected == "weekly":
         return infer_weekly(data, top=top)
     if detected == "yearly":
-        return infer_yearly(data, top=top)
+        return infer_yearly(data, top=top, holiday_profile=holiday_profile)
     raise DetectionError(f"unsupported input kind: {detected}")
 
 
@@ -178,7 +180,12 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
     }
 
 
-def infer_yearly(data: Any, top: int = 5) -> dict[str, Any]:
+def infer_yearly(
+    data: Any, top: int = 5, holiday_profile: str = "standard"
+) -> dict[str, Any]:
+    if holiday_profile not in {"standard", "public-worker"}:
+        raise DetectionError("holiday_profile must be standard or public-worker")
+
     observed = _parse_yearly_rows(data)
     if not observed:
         raise DetectionError("yearly input has no activity")
@@ -191,7 +198,9 @@ def infer_yearly(data: Any, top: int = 5) -> dict[str, Any]:
     baseline = median(counts)
 
     candidates = []
-    for region_id, label, holidays in _candidate_holidays(first_day.year).values():
+    for region_id, label, holidays in _candidate_holidays(
+        first_day.year, include_public_worker=(holiday_profile == "public-worker")
+    ).values():
         relevant = [holiday for holiday in holidays if first_day <= holiday.day <= last_day]
         if not relevant:
             continue
@@ -241,6 +250,9 @@ def infer_yearly(data: Any, top: int = 5) -> dict[str, Any]:
         "confidence": _distribution_confidence(candidates),
         "assumptions": [
             "Daily buckets are compared with representative public-holiday calendars.",
+            "The public-worker holiday profile adds public-sector closure days where they are distinct from general public holidays."
+            if holiday_profile == "public-worker"
+            else "Only general public holidays are used unless the public-worker holiday profile is requested.",
             "The model accepts either spikes or drops on holidays because datasets can represent attention, publication, or work activity.",
             "This first implementation ranks broad regions; it is not a legal or forensic geolocation result.",
         ],
@@ -250,6 +262,7 @@ def infer_yearly(data: Any, top: int = 5) -> dict[str, Any]:
             "days_evaluated": len(full_series),
             "median_daily_activity": baseline,
             "max_daily_activity": max(counts),
+            "holiday_profile": holiday_profile,
         },
         "results": candidates[:top],
     }
@@ -374,9 +387,11 @@ def _holiday_name(day: date, holidays: Iterable[Holiday]) -> str:
     return ", ".join(names)
 
 
-def _candidate_holidays(year: int) -> dict[str, tuple[str, str, list[Holiday]]]:
+def _candidate_holidays(
+    year: int, include_public_worker: bool = False
+) -> dict[str, tuple[str, str, list[Holiday]]]:
     easter = _easter_sunday(year)
-    return {
+    candidates = {
         "US": ("US", "United States", _us_holidays(year)),
         "CA": ("CA", "Canada", _canada_holidays(year, easter)),
         "GB": ("GB", "United Kingdom", _uk_holidays(year, easter)),
@@ -410,6 +425,66 @@ def _candidate_holidays(year: int) -> dict[str, tuple[str, str, list[Holiday]]]:
         "AU": ("AU", "Australia", _australia_holidays(year, easter)),
         "NZ": ("NZ", "New Zealand", _new_zealand_holidays(year, easter)),
     }
+    if include_public_worker:
+        candidates.update(_public_worker_holiday_candidates(year, candidates))
+    return candidates
+
+
+def _public_worker_holiday_candidates(
+    year: int, standard: dict[str, tuple[str, str, list[Holiday]]]
+) -> dict[str, tuple[str, str, list[Holiday]]]:
+    return {
+        "US-PUBLIC-WORKER": (
+            "US-PUBLIC-WORKER",
+            "United States public-sector worker",
+            _merge_holidays(
+                standard["US"][2],
+                [
+                    _fixed(year, 2, 12, "Lincoln's Birthday / state worker holiday"),
+                    _nth_weekday(year, 11, 1, 1, "Election Day / state worker holiday"),
+                    _relative(
+                        _nth_weekday(year, 11, 3, 4, "Thanksgiving").day,
+                        1,
+                        "Day after Thanksgiving / state worker holiday",
+                    ),
+                    _fixed(year, 12, 24, "Christmas Eve / public-sector closure"),
+                    _fixed(year, 12, 31, "New Year's Eve / public-sector closure"),
+                ],
+            ),
+        ),
+        "ES-PUBLIC-WORKER": (
+            "ES-PUBLIC-WORKER",
+            "Spain public-sector worker",
+            _merge_holidays(
+                standard["ES"][2],
+                [
+                    _fixed(year, 5, 22, "Santa Rita / civil-servant reference day"),
+                    _fixed(year, 12, 24, "Christmas Eve / public-sector closure"),
+                    _fixed(year, 12, 31, "New Year's Eve / public-sector closure"),
+                ],
+            ),
+        ),
+        "FR-PUBLIC-WORKER": (
+            "FR-PUBLIC-WORKER",
+            "France public-sector worker",
+            _merge_holidays(
+                standard["FR"][2],
+                [
+                    _fixed(year, 5, 9, "Europe Day / institutional reference day"),
+                    _fixed(year, 12, 24, "Christmas Eve / administrative closure"),
+                    _fixed(year, 12, 31, "New Year's Eve / administrative closure"),
+                ],
+            ),
+        ),
+    }
+
+
+def _merge_holidays(*holiday_lists: list[Holiday]) -> list[Holiday]:
+    merged: dict[tuple[date, str], Holiday] = {}
+    for holidays in holiday_lists:
+        for holiday in holidays:
+            merged[(holiday.day, holiday.name)] = holiday
+    return sorted(merged.values(), key=lambda holiday: (holiday.day, holiday.name))
 
 
 def _fixed(year: int, month: int, day: int, name: str) -> Holiday:

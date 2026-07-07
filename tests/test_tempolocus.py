@@ -34,3 +34,20 @@ def test_kind_can_be_forced():
 
     assert result["input_type"] == "yearly_daily_activity"
     assert len(result["results"]) == 2
+
+
+def test_public_worker_holiday_profile_adds_sector_references():
+    result = detect(load_sample("year.json"), top=40, holiday_profile="public-worker")
+
+    assert result["signals"]["holiday_profile"] == "public-worker"
+    ids = {item["id"] for item in result["results"]}
+    assert "US-PUBLIC-WORKER" in ids
+    assert "ES-PUBLIC-WORKER" in ids
+    assert "FR-PUBLIC-WORKER" in ids
+
+
+def test_standard_holiday_profile_omits_public_worker_references():
+    result = detect(load_sample("year.json"), top=40)
+
+    ids = {item["id"] for item in result["results"]}
+    assert "US-PUBLIC-WORKER" not in ids

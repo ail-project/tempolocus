@@ -64,6 +64,11 @@ def _print_text(result: dict, top: int) -> None:
         print("assumptions:")
         for assumption in result["assumptions"]:
             print(f"  - {assumption}")
+    if result.get("probable_countries"):
+        print("probable_countries:")
+        for item in result["probable_countries"]:
+            offsets = ", ".join(item["matched_timezone_offsets"])
+            print(f"  {item['probability']:0.3f}  {item['label']} ({offsets})")
     print("results:")
     for item in result["results"][:top]:
         label = item.get("label") or item.get("id")

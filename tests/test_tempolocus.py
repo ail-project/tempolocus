@@ -20,6 +20,24 @@ def test_weekly_sample_produces_timezone_candidates():
     assert result["results"][0]["probability"] >= result["results"][1]["probability"]
 
 
+def test_weekly_sample_produces_probable_country_candidates():
+    result = detect(load_sample("weekfull-chan1.json"), top=5)
+
+    assert result["probable_countries"]
+    assert result["probable_countries"][0]["kind"] == "country"
+    assert (
+        result["probable_countries"][0]["probability"]
+        >= result["probable_countries"][1]["probability"]
+    )
+    assert any(
+        country["evidence"]["multiple_timezone_match"]
+        for country in result["probable_countries"]
+    )
+    top_offsets = {item["id"] for item in result["results"]}
+    for country in result["probable_countries"]:
+        assert set(country["matched_timezone_offsets"]) <= top_offsets
+
+
 def test_yearly_sample_produces_region_candidates():
     result = detect(load_sample("year.json"), top=5)
 

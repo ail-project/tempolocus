@@ -89,6 +89,28 @@ OFFSET_LABELS: dict[int, tuple[str, list[str]]] = {
 }
 
 
+COUNTRY_TIMEZONE_OFFSETS: dict[str, tuple[str, set[int]]] = {
+    "US": ("United States", {-10, -9, -8, -7, -6, -5}),
+    "CA": ("Canada", {-8, -7, -6, -5, -4}),
+    "MX": ("Mexico", {-8, -7, -6}),
+    "BR": ("Brazil", {-5, -4, -3, -2}),
+    "CL": ("Chile", {-6, -4}),
+    "EC": ("Ecuador", {-6, -5}),
+    "PT": ("Portugal", {-1, 0}),
+    "ES": ("Spain", {0, 1}),
+    "FR": ("France", {-10, -4, -3, 1, 3, 4, 11, 12}),
+    "GB": ("United Kingdom", {-8, -4, -3, -2, 0, 6}),
+    "RU": ("Russia", {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}),
+    "KZ": ("Kazakhstan", {5, 6}),
+    "MN": ("Mongolia", {7, 8}),
+    "ID": ("Indonesia", {7, 8, 9}),
+    "AU": ("Australia", {8, 9, 10}),
+    "FM": ("Micronesia", {10, 11}),
+    "KI": ("Kiribati", {12, 13, 14}),
+    "NZ": ("New Zealand", {-10, 12, 13}),
+}
+
+
 LOCAL_ACTIVITY_PROFILE = {
     0: 0.04,
     1: 0.02,
@@ -221,6 +243,8 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
         f"UTC buckets by inferred offset {candidates[0]['id']}"
     )
     activity_analysis["timezone_offset"] = candidates[0]["id"]
+    top_timezone_candidates = candidates[:top]
+    probable_countries = _probable_countries_from_timezones(top_timezone_candidates)
     return {
         "input_type": "weekly_timeseries",
         "confidence": _distribution_confidence(candidates),
@@ -235,7 +259,8 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
             "quiet_activity_ratio": round(quiet_ratio, 3),
             "weekend_share": round(weekend_share, 3),
         },
-        "results": candidates[:top],
+        "probable_countries": probable_countries,
+        "results": top_timezone_candidates,
     }
 
 
@@ -527,6 +552,54 @@ def _parse_offset(offset_id: str) -> int:
     if not offset_id.startswith("UTC") or not offset_id.endswith(":00"):
         raise DetectionError(f"invalid timezone offset id: {offset_id}")
     return int(offset_id[3:-3])
+
+
+def _probable_countries_from_timezones(
+    timezone_candidates: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Rank countries whose multiple timezones appear in the top weekly offsets."""
+    if not timezone_candidates:
+        return []
+
+    probabilities_by_offset = {
+        _parse_offset(candidate["id"]): candidate["probability"]
+        for candidate in timezone_candidates
+    }
+    country_candidates = []
+    for country_id, (label, country_offsets) in COUNTRY_TIMEZONE_OFFSETS.items():
+        matched_offsets = sorted(set(probabilities_by_offset) & country_offsets)
+        if not matched_offsets:
+            continue
+
+        probability_mass = sum(
+            probabilities_by_offset[offset] for offset in matched_offsets
+        )
+        matched_count = len(matched_offsets)
+        coverage = matched_count / len(country_offsets)
+        multi_timezone_bonus = 1.0 + (0.18 * (matched_count - 1))
+        score = probability_mass * (0.78 + (0.22 * coverage)) * multi_timezone_bonus
+        country_candidates.append(
+            {
+                "kind": "country",
+                "id": country_id,
+                "label": label,
+                "score": score,
+                "matched_timezone_offsets": [
+                    _format_offset(offset) for offset in matched_offsets
+                ],
+                "matched_timezone_count": matched_count,
+                "country_timezone_count": len(country_offsets),
+                "evidence": {
+                    "top_timezone_probability_mass": round(probability_mass, 6),
+                    "top_timezone_coverage": round(coverage, 6),
+                    "multiple_timezone_match": matched_count > 1,
+                },
+            }
+        )
+
+    _attach_probabilities(country_candidates, temperature=4.0)
+    country_candidates.sort(key=lambda item: item["probability"], reverse=True)
+    return country_candidates[: min(5, len(country_candidates))]
 
 
 def _format_offset(offset: int) -> str:

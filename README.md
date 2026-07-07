@@ -28,7 +28,9 @@ tempolocus samples/year.json --activity-signal peak --format text
 
 The output is probabilistic JSON and includes a generic `analysis.activity_type`
 classification of `work-time`, `vacation-time`, or `mixed-time`. Weekly inputs
-rank timezone offsets and representative IANA zones. Yearly inputs rank broad regions by comparing
+rank timezone offsets, representative IANA zones, and a `probable_countries`
+list that highlights countries whose multiple timezones appear in the top
+timezone-offset results. Yearly inputs rank broad regions by comparing
 activity on public-holiday calendars, including Orthodox calendar references for
 countries such as Bulgaria, Greece, Romania, Russia, Serbia, and Ukraine.
 Yearly analysis treats a lack of activity on holidays as the default signal;
@@ -57,6 +59,9 @@ activity_type: mixed-time (0.009)
 assumptions:
   - Hourly buckets are interpreted as UTC; timezone candidates are offsets that make the activity look locally human.
   - Weekly data cannot distinguish all IANA zones sharing the same offset, and daylight saving time is not inferable without dates.
+probable_countries:
+  0.898  Russia (UTC+02:00, UTC+03:00, UTC+04:00, UTC+05:00, UTC+06:00)
+  0.051  Kazakhstan (UTC+05:00, UTC+06:00)
 results:
   0.208  timezone: UTC+05 Pakistan / western Central Asia
           utc_quiet_window=19:00-01:00; local_quiet_window=00:00-06:00; quiet_activity_ratio=0.366; local_quiet_center=2.5

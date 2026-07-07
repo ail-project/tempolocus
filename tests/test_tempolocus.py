@@ -146,3 +146,17 @@ def test_weekly_analysis_classifies_mixed_time():
     result = detect(data, kind="weekly")
 
     assert result["analysis"]["activity_type"] == "mixed-time"
+
+
+def test_weekly_analysis_uses_inferred_local_offset():
+    data = []
+    for day in range(7):
+        for hour in range(24):
+            count = 10 if day <= 4 and 0 <= hour <= 7 else 1
+            data.append({"day": day, "hour": hour, "count": count})
+
+    result = detect(data, kind="weekly")
+
+    assert result["analysis"]["timezone_offset"] == result["results"][0]["id"]
+    assert result["analysis"]["activity_type"] != "vacation-time"
+    assert "inferred offset" in result["analysis"]["basis"]

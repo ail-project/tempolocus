@@ -37,6 +37,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Holiday reference set for yearly inputs. Use public-worker to add public-sector closure days.",
     )
     parser.add_argument(
+        "--activity-signal",
+        choices=("lack", "peak"),
+        default="lack",
+        help="Yearly activity signal to match against holidays. Defaults to lack of activity; use peak for high-activity holiday indicators.",
+    )
+    parser.add_argument(
         "--format",
         choices=("json", "text"),
         default="json",
@@ -69,7 +75,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         data = load_json(args.input)
         result = detect(
-            data, kind=args.kind, top=args.top, holiday_profile=args.holiday_profile
+            data,
+            kind=args.kind,
+            top=args.top,
+            holiday_profile=args.holiday_profile,
+            activity_signal=args.activity_signal,
         )
     except (OSError, json.JSONDecodeError, DetectionError) as exc:
         print(f"tempolocus: {exc}", file=sys.stderr)

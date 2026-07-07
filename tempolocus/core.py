@@ -213,9 +213,11 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
     weekday_total = sum(daily[:5])
     weekend_total = sum(daily[5:])
     weekend_share = weekend_total / (weekday_total + weekend_total)
+    activity_analysis = analyze_weekly_activity(rows)
     return {
         "input_type": "weekly_timeseries",
         "confidence": _distribution_confidence(candidates),
+        "analysis": activity_analysis,
         "assumptions": [
             "Hourly buckets are interpreted as UTC; timezone candidates are offsets that make the activity look locally human.",
             "Weekly data cannot distinguish all IANA zones sharing the same offset, and daylight saving time is not inferable without dates.",
@@ -311,9 +313,11 @@ def infer_yearly(
 
     _attach_probabilities(candidates, temperature=7.0)
     candidates.sort(key=lambda item: item["probability"], reverse=True)
+    activity_analysis = analyze_yearly_activity(full_series)
     return {
         "input_type": "yearly_daily_activity",
         "confidence": _distribution_confidence(candidates),
+        "analysis": activity_analysis,
         "assumptions": [
             "Daily buckets are compared with representative public-holiday calendars.",
             (
@@ -338,6 +342,109 @@ def infer_yearly(
             "activity_signal": activity_signal,
         },
         "results": candidates[:top],
+    }
+
+
+def analyze_activity(data: Any, kind: str = "auto") -> dict[str, Any]:
+    """Classify temporal activity as work-time, vacation-time, or mixed-time."""
+    detected = _detect_kind(data) if kind == "auto" else kind
+    if detected == "weekly":
+        return analyze_weekly_activity(_parse_weekly_rows(data))
+    if detected == "yearly":
+        observed = _parse_yearly_rows(data)
+        if not observed:
+            raise DetectionError("yearly input has no activity")
+        return analyze_yearly_activity(
+            _fill_dates(observed, min(observed), max(observed))
+        )
+    raise DetectionError(f"unsupported input kind: {detected}")
+
+
+def analyze_weekly_activity(rows: list[tuple[int, int, float]]) -> dict[str, Any]:
+    totals = {"work": 0.0, "vacation": 0.0, "other": 0.0}
+    total = 0.0
+    for day, hour, count in rows:
+        total += count
+        if day <= 4 and 8 <= hour <= 17:
+            totals["work"] += count
+        elif day >= 5 or hour < 8 or hour >= 18:
+            totals["vacation"] += count
+        else:
+            totals["other"] += count
+    if total <= 0:
+        raise DetectionError("weekly input has no activity")
+
+    work_share = totals["work"] / total
+    vacation_share = totals["vacation"] / total
+    other_share = totals["other"] / total
+    expected_work_share = sum(
+        1 for day in range(5) for hour in range(8, 18)
+    ) / (7 * 24)
+    expected_vacation_share = sum(
+        1
+        for day in range(7)
+        for hour in range(24)
+        if day >= 5 or hour < 8 or hour >= 18
+    ) / (7 * 24)
+    work_lift = work_share - expected_work_share
+    vacation_lift = vacation_share - expected_vacation_share
+    if work_lift >= 0.12 and work_lift >= vacation_lift:
+        activity_type = "work-time"
+        confidence = work_lift
+    elif vacation_lift >= 0.12 and vacation_lift > work_lift:
+        activity_type = "vacation-time"
+        confidence = vacation_lift
+    else:
+        activity_type = "mixed-time"
+        confidence = max(abs(work_lift), abs(vacation_lift))
+    return {
+        "activity_type": activity_type,
+        "confidence": round(confidence, 6),
+        "basis": "weekly business-hours versus weekend/off-hours activity",
+        "shares": {
+            "work_time": round(work_share, 6),
+            "vacation_time": round(vacation_share, 6),
+            "other_time": round(other_share, 6),
+            "expected_work_time": round(expected_work_share, 6),
+            "expected_vacation_time": round(expected_vacation_share, 6),
+        },
+    }
+
+
+def analyze_yearly_activity(series: dict[date, float]) -> dict[str, Any]:
+    total = sum(series.values())
+    if total <= 0:
+        raise DetectionError("yearly input has no activity")
+    weekday_total = sum(count for day, count in series.items() if day.weekday() < 5)
+    weekend_total = total - weekday_total
+    weekday_days = sum(1 for day in series if day.weekday() < 5)
+    weekend_days = len(series) - weekday_days
+    weekday_share = weekday_total / total
+    weekend_share = weekend_total / total
+    expected_weekday_share = weekday_days / len(series)
+    expected_weekend_share = weekend_days / len(series)
+    weekday_lift = weekday_share - expected_weekday_share
+    weekend_lift = weekend_share - expected_weekend_share
+
+    if weekday_lift >= 0.12:
+        activity_type = "work-time"
+        confidence = weekday_lift
+    elif weekend_lift >= 0.12:
+        activity_type = "vacation-time"
+        confidence = weekend_lift
+    else:
+        activity_type = "mixed-time"
+        confidence = max(abs(weekday_lift), abs(weekend_lift))
+    return {
+        "activity_type": activity_type,
+        "confidence": round(confidence, 6),
+        "basis": "yearly weekday versus weekend activity balance",
+        "shares": {
+            "weekday_activity": round(weekday_share, 6),
+            "weekend_activity": round(weekend_share, 6),
+            "expected_weekday_days": round(expected_weekday_share, 6),
+            "expected_weekend_days": round(expected_weekend_share, 6),
+        },
     }
 
 

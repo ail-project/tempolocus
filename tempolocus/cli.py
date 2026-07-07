@@ -54,6 +54,12 @@ def build_parser() -> argparse.ArgumentParser:
 def _print_text(result: dict, top: int) -> None:
     print(f"input_type: {result['input_type']}")
     print(f"confidence: {result['confidence']:.3f}")
+    if result.get("analysis"):
+        analysis = result["analysis"]
+        print(
+            f"activity_type: {analysis['activity_type']} "
+            f"({analysis['confidence']:.3f})"
+        )
     if result.get("assumptions"):
         print("assumptions:")
         for assumption in result["assumptions"]:

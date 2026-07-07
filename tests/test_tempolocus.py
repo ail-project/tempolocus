@@ -89,3 +89,17 @@ def test_china_public_worker_profile_includes_spring_festival_window():
         "2026-02-22",
         "2026-02-23",
     }
+
+
+def test_yearly_activity_signal_defaults_to_lack_of_activity():
+    result = detect(load_sample("year.json"), top=5)
+
+    assert result["signals"]["activity_signal"] == "lack"
+    assert {item["signal"] for item in result["results"]} == {"holiday_drop"}
+
+
+def test_yearly_activity_signal_can_match_activity_peaks():
+    result = detect(load_sample("year.json"), top=5, activity_signal="peak")
+
+    assert result["signals"]["activity_signal"] == "peak"
+    assert {item["signal"] for item in result["results"]} == {"holiday_spike"}

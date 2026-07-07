@@ -1,6 +1,6 @@
 # tempolocus
 
-tempolocus look at time-series activity patterns to approximate a location inference.
+tempolocus looks at time-series activity patterns to infer a location.
 
 ## Using tempolocus 
 

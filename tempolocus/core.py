@@ -213,7 +213,14 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
     weekday_total = sum(daily[:5])
     weekend_total = sum(daily[5:])
     weekend_share = weekend_total / (weekday_total + weekend_total)
-    activity_analysis = analyze_weekly_activity(rows)
+    inferred_offset = _parse_offset(candidates[0]["id"])
+    local_rows = _shift_weekly_rows(rows, inferred_offset)
+    activity_analysis = analyze_weekly_activity(local_rows)
+    activity_analysis["basis"] = (
+        f"weekly business-hours versus weekend/off-hours activity after shifting "
+        f"UTC buckets by inferred offset {candidates[0]['id']}"
+    )
+    activity_analysis["timezone_offset"] = candidates[0]["id"]
     return {
         "input_type": "weekly_timeseries",
         "confidence": _distribution_confidence(candidates),
@@ -502,6 +509,24 @@ def _lowest_window(values: list[float], window: int) -> tuple[int, float]:
             best_start = start
             best_sum = total
     return best_start, best_sum
+
+
+def _shift_weekly_rows(
+    rows: list[tuple[int, int, float]], offset: int
+) -> list[tuple[int, int, float]]:
+    shifted = []
+    for day, hour, count in rows:
+        shifted_hour_total = hour + offset
+        shifted_day = (day + math.floor(shifted_hour_total / 24)) % 7
+        shifted_hour = shifted_hour_total % 24
+        shifted.append((shifted_day, shifted_hour, count))
+    return shifted
+
+
+def _parse_offset(offset_id: str) -> int:
+    if not offset_id.startswith("UTC") or not offset_id.endswith(":00"):
+        raise DetectionError(f"invalid timezone offset id: {offset_id}")
+    return int(offset_id[3:-3])
 
 
 def _format_offset(offset: int) -> str:

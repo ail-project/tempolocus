@@ -51,8 +51,8 @@ timezone without dates, and yearly data is sensitive to the meaning of the
 activity counter.
 ## Example 
 
-~~~json
-python3 -m tempolocus samples/weekfull-chan1.json --format text  -n 5 --holiday-profile public-worker 
+~~~
+adulau@blakley:~/git/tempolocus$ python3 -m tempolocus samples/weekfull-chan1.json --format text  -n 10 --holiday-profile public-worker 
 input_type: weekly_timeseries
 confidence: 0.220
 activity_type: mixed-time (0.009)
@@ -60,8 +60,11 @@ assumptions:
   - Hourly buckets are interpreted as UTC; timezone candidates are offsets that make the activity look locally human.
   - Weekly data cannot distinguish all IANA zones sharing the same offset, and daylight saving time is not inferable without dates.
 probable_countries:
-  0.898  Russia (UTC+02:00, UTC+03:00, UTC+04:00, UTC+05:00, UTC+06:00)
-  0.051  Kazakhstan (UTC+05:00, UTC+06:00)
+  0.970  Russia (UTC+02:00, UTC+03:00, UTC+04:00, UTC+05:00, UTC+06:00, UTC+07:00, UTC+08:00)
+  0.009  France (UTC+01:00, UTC+03:00, UTC+04:00)
+  0.008  Kazakhstan (UTC+05:00, UTC+06:00)
+  0.003  United Kingdom (UTC+00:00, UTC+06:00)
+  0.002  Mongolia (UTC+07:00, UTC+08:00)
 results:
   0.208  timezone: UTC+05 Pakistan / western Central Asia
           utc_quiet_window=19:00-01:00; local_quiet_window=00:00-06:00; quiet_activity_ratio=0.366; local_quiet_center=2.5
@@ -73,6 +76,16 @@ results:
           utc_quiet_window=19:00-01:00; local_quiet_window=22:00-04:00; quiet_activity_ratio=0.366; local_quiet_center=0.5
   0.072  timezone: UTC+02 Eastern Europe / southern Africa
           utc_quiet_window=19:00-01:00; local_quiet_window=21:00-03:00; quiet_activity_ratio=0.366; local_quiet_center=23.5
+  0.067  timezone: UTC+07 mainland Southeast Asia
+          utc_quiet_window=19:00-01:00; local_quiet_window=02:00-08:00; quiet_activity_ratio=0.366; local_quiet_center=4.5
+  0.039  timezone: UTC+01 Central Europe / West Africa
+          utc_quiet_window=19:00-01:00; local_quiet_window=20:00-02:00; quiet_activity_ratio=0.366; local_quiet_center=22.5
+  0.027  timezone: UTC+08 China / Singapore / Western Australia
+          utc_quiet_window=19:00-01:00; local_quiet_window=03:00-09:00; quiet_activity_ratio=0.366; local_quiet_center=5.5
+  0.023  timezone: UTC+00 Western Europe / West Africa
+          utc_quiet_window=19:00-01:00; local_quiet_window=19:00-01:00; quiet_activity_ratio=0.366; local_quiet_center=21.5
+  0.015  timezone: UTC-01 Azores / Cape Verde
+          utc_quiet_window=19:00-01:00; local_quiet_window=18:00-00:00; quiet_activity_ratio=0.366; local_quiet_center=20.5
 ~~~
 
 ## License

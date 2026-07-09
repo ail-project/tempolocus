@@ -32,14 +32,18 @@ rank timezone offsets, representative IANA zones, and a `probable_countries`
 list that highlights countries whose multiple timezones appear in the top
 timezone-offset results. Yearly inputs rank broad regions by comparing
 activity on public-holiday calendars, including Orthodox calendar references for
-countries such as Bulgaria, Greece, Romania, Russia, Serbia, and Ukraine.
+countries such as Bulgaria, Greece, Romania, Russia, Serbia, and Ukraine, plus
+South American calendars for Argentina, Brazil, Chile, Colombia, Peru, and
+Uruguay.
 Yearly analysis treats a lack of activity on holidays as the default signal;
 pass `--activity-signal peak` when unusually high activity is the indicator you
 want to match instead. Yearly analysis defaults to standard public holidays;
 pass `--holiday-profile public-worker` to add public-sector worker references,
 such as state-worker, Golden Week, bridge-day, or administrative closure days,
 alongside standard holidays. The public-worker profile includes additional
-China and Russia references for government and public-sector closure patterns.
+China and Russia references for government and public-sector closure patterns,
+and South American public-servant references with common administrative bridge
+or year-end closure days.
 
 The generic activity analysis compares weekly business-hours against
 weekend/off-hours activity, or yearly weekday activity against weekend activity.

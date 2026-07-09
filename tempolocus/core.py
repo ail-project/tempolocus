@@ -93,9 +93,13 @@ COUNTRY_TIMEZONE_OFFSETS: dict[str, tuple[str, set[int]]] = {
     "US": ("United States", {-10, -9, -8, -7, -6, -5}),
     "CA": ("Canada", {-8, -7, -6, -5, -4}),
     "MX": ("Mexico", {-8, -7, -6}),
+    "AR": ("Argentina", {-3}),
     "BR": ("Brazil", {-5, -4, -3, -2}),
     "CL": ("Chile", {-6, -4}),
+    "CO": ("Colombia", {-5}),
     "EC": ("Ecuador", {-6, -5}),
+    "PE": ("Peru", {-5}),
+    "UY": ("Uruguay", {-3}),
     "PT": ("Portugal", {-1, 0}),
     "ES": ("Spain", {0, 1}),
     "FR": ("France", {-10, -4, -3, 1, 3, 4, 11, 12}),
@@ -715,6 +719,10 @@ def _candidate_holidays(
         "CN": ("CN", "China", _china_holidays(year)),
         "IN": ("IN", "India", _india_holidays(year)),
         "BR": ("BR", "Brazil", _brazil_holidays(year, easter)),
+        "CL": ("CL", "Chile", _chile_holidays(year, easter)),
+        "CO": ("CO", "Colombia", _colombia_holidays(year, easter)),
+        "PE": ("PE", "Peru", _peru_holidays(year, easter)),
+        "UY": ("UY", "Uruguay", _uruguay_holidays(year, easter)),
         "MX": ("MX", "Mexico", _mexico_holidays(year)),
         "AR": ("AR", "Argentina", _argentina_holidays(year, easter)),
         "AU": ("AU", "Australia", _australia_holidays(year, easter)),
@@ -785,6 +793,54 @@ def _public_worker_holiday_candidates(
             _merge_holidays(
                 standard["RU"][2],
                 _russia_public_worker_holidays(year),
+            ),
+        ),
+        "AR-PUBLIC-WORKER": (
+            "AR-PUBLIC-WORKER",
+            "Argentina public-sector worker",
+            _merge_holidays(
+                standard["AR"][2],
+                _south_america_public_worker_holidays(year),
+            ),
+        ),
+        "BR-PUBLIC-WORKER": (
+            "BR-PUBLIC-WORKER",
+            "Brazil public-sector worker",
+            _merge_holidays(
+                standard["BR"][2],
+                _south_america_public_worker_holidays(year),
+            ),
+        ),
+        "CL-PUBLIC-WORKER": (
+            "CL-PUBLIC-WORKER",
+            "Chile public-sector worker",
+            _merge_holidays(
+                standard["CL"][2],
+                _south_america_public_worker_holidays(year),
+            ),
+        ),
+        "CO-PUBLIC-WORKER": (
+            "CO-PUBLIC-WORKER",
+            "Colombia public-sector worker",
+            _merge_holidays(
+                standard["CO"][2],
+                _south_america_public_worker_holidays(year),
+            ),
+        ),
+        "PE-PUBLIC-WORKER": (
+            "PE-PUBLIC-WORKER",
+            "Peru public-sector worker",
+            _merge_holidays(
+                standard["PE"][2],
+                _south_america_public_worker_holidays(year),
+            ),
+        ),
+        "UY-PUBLIC-WORKER": (
+            "UY-PUBLIC-WORKER",
+            "Uruguay public-sector worker",
+            _merge_holidays(
+                standard["UY"][2],
+                _south_america_public_worker_holidays(year),
             ),
         ),
     }
@@ -1334,6 +1390,14 @@ def _china_public_worker_holidays(year: int) -> list[Holiday]:
     return holidays
 
 
+def _south_america_public_worker_holidays(year: int) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 2, "New Year bridge day / public-sector closure"),
+        _fixed(year, 12, 24, "Christmas Eve / public-sector closure"),
+        _fixed(year, 12, 31, "New Year's Eve / public-sector closure"),
+    ]
+
+
 def _russia_public_worker_holidays(year: int) -> list[Holiday]:
     return [
         _fixed(year, 1, day, "New Year holidays / public-sector closure")
@@ -1398,6 +1462,87 @@ def _brazil_holidays(year: int, easter: date) -> list[Holiday]:
         _fixed(year, 11, 2, "All Souls' Day"),
         _fixed(year, 11, 15, "Republic Proclamation Day"),
         _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
+def _chile_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _relative(easter, -2, "Good Friday"),
+        _relative(easter, -1, "Holy Saturday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 5, 21, "Navy Day"),
+        _fixed(year, 6, 20, "National Indigenous Peoples Day"),
+        _fixed(year, 7, 16, "Our Lady of Mount Carmel"),
+        _fixed(year, 8, 15, "Assumption of Mary"),
+        _fixed(year, 9, 18, "Independence Day"),
+        _fixed(year, 9, 19, "Army Day"),
+        _fixed(year, 10, 12, "Encounter of Two Worlds"),
+        _fixed(year, 10, 31, "Reformation Day"),
+        _fixed(year, 11, 1, "All Saints' Day"),
+        _fixed(year, 12, 8, "Immaculate Conception"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
+def _colombia_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _nth_weekday(year, 1, 0, 2, "Epiphany observed"),
+        _nth_weekday(year, 3, 0, 3, "Saint Joseph's Day observed"),
+        _relative(easter, -3, "Maundy Thursday"),
+        _relative(easter, -2, "Good Friday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _relative(easter, 43, "Ascension Day observed"),
+        _relative(easter, 64, "Corpus Christi observed"),
+        _relative(easter, 71, "Sacred Heart observed"),
+        _fixed(year, 7, 20, "Independence Day"),
+        _fixed(year, 8, 7, "Battle of Boyaca"),
+        _nth_weekday(year, 8, 0, 3, "Assumption of Mary observed"),
+        _nth_weekday(year, 10, 0, 3, "Columbus Day observed"),
+        _nth_weekday(year, 11, 0, 1, "All Saints' Day observed"),
+        _nth_weekday(year, 11, 0, 2, "Independence of Cartagena observed"),
+        _fixed(year, 12, 8, "Immaculate Conception"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
+def _peru_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _relative(easter, -3, "Maundy Thursday"),
+        _relative(easter, -2, "Good Friday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 6, 7, "Battle of Arica and Flag Day"),
+        _fixed(year, 6, 29, "Saint Peter and Saint Paul"),
+        _fixed(year, 7, 28, "Independence Day"),
+        _fixed(year, 7, 29, "Independence Day holiday"),
+        _fixed(year, 8, 6, "Battle of Junin"),
+        _fixed(year, 8, 30, "Saint Rose of Lima"),
+        _fixed(year, 10, 8, "Battle of Angamos"),
+        _fixed(year, 11, 1, "All Saints' Day"),
+        _fixed(year, 12, 8, "Immaculate Conception"),
+        _fixed(year, 12, 9, "Battle of Ayacucho"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
+def _uruguay_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _relative(easter, -48, "Carnival Monday"),
+        _relative(easter, -47, "Carnival Tuesday"),
+        _relative(easter, -3, "Tourism Week Thursday"),
+        _relative(easter, -2, "Tourism Week Friday"),
+        _fixed(year, 4, 19, "Landing of the Thirty-Three Orientals"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 5, 18, "Battle of Las Piedras"),
+        _fixed(year, 6, 19, "Birth of Artigas"),
+        _fixed(year, 7, 18, "Constitution Day"),
+        _fixed(year, 8, 25, "Independence Day"),
+        _fixed(year, 10, 12, "Day of the Americas"),
+        _fixed(year, 11, 2, "All Souls' Day"),
+        _fixed(year, 12, 25, "Christmas Day / Family Day"),
     ]
 
 

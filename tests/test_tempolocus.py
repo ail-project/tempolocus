@@ -55,7 +55,7 @@ def test_kind_can_be_forced():
 
 
 def test_public_worker_holiday_profile_adds_sector_references():
-    result = detect(load_sample("year.json"), top=40, holiday_profile="public-worker")
+    result = detect(load_sample("year.json"), top=80, holiday_profile="public-worker")
 
     assert result["signals"]["holiday_profile"] == "public-worker"
     ids = {item["id"] for item in result["results"]}
@@ -83,7 +83,7 @@ def test_standard_holiday_profile_includes_orthodox_regions():
 
 
 def test_public_worker_holiday_profile_adds_china_and_russia_references():
-    result = detect(load_sample("year.json"), top=50, holiday_profile="public-worker")
+    result = detect(load_sample("year.json"), top=80, holiday_profile="public-worker")
 
     ids = {item["id"] for item in result["results"]}
     assert "CN-PUBLIC-WORKER" in ids
@@ -178,3 +178,44 @@ def test_weekly_analysis_uses_inferred_local_offset():
     assert result["analysis"]["timezone_offset"] == result["results"][0]["id"]
     assert result["analysis"]["activity_type"] != "vacation-time"
     assert "inferred offset" in result["analysis"]["basis"]
+
+
+def test_standard_holiday_profile_includes_south_american_regions():
+    candidates = _candidate_holidays(2026)
+
+    assert {"AR", "BR", "CL", "CO", "PE", "UY"} <= set(candidates)
+    assert any(
+        holiday.day.isoformat() == "2026-07-28"
+        and holiday.name == "Independence Day"
+        for holiday in candidates["PE"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-09-18"
+        and holiday.name == "Independence Day"
+        for holiday in candidates["CL"][2]
+    )
+
+
+def test_public_worker_holiday_profile_adds_south_american_references():
+    result = detect(load_sample("year.json"), top=80, holiday_profile="public-worker")
+
+    ids = {item["id"] for item in result["results"]}
+    assert {
+        "AR-PUBLIC-WORKER",
+        "BR-PUBLIC-WORKER",
+        "CL-PUBLIC-WORKER",
+        "CO-PUBLIC-WORKER",
+        "PE-PUBLIC-WORKER",
+        "UY-PUBLIC-WORKER",
+    } <= ids
+
+
+def test_south_america_public_worker_profile_includes_bridge_closures():
+    candidates = _candidate_holidays(2026, include_public_worker=True)
+    dates = {
+        holiday.day.isoformat()
+        for holiday in candidates["BR-PUBLIC-WORKER"][2]
+        if "public-sector closure" in holiday.name
+    }
+
+    assert {"2026-01-02", "2026-12-24", "2026-12-31"} <= dates

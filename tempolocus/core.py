@@ -862,12 +862,47 @@ def _relative(base: date, days: int, name: str) -> Holiday:
     return Holiday(base + timedelta(days=days), name)
 
 
+def _june_solstice_date(year: int) -> date:
+    y = (year - 2000) / 1000
+    julian_day = (
+        2451716.56767
+        + (365241.62603 * y)
+        + (0.00325 * y**2)
+        + (0.00888 * y**3)
+        - (0.00030 * y**4)
+    )
+    return _julian_day_to_date(julian_day)
+
+
+def _julian_day_to_date(julian_day: float) -> date:
+    julian_day_number = int(julian_day + 0.5)
+    if julian_day_number >= 2299161:
+        correction = int((julian_day_number - 1867216.25) / 36524.25)
+        adjusted = julian_day_number + 1 + correction - int(correction / 4)
+    else:
+        adjusted = julian_day_number
+    b = adjusted + 1524
+    c = int((b - 122.1) / 365.25)
+    d = int(365.25 * c)
+    e = int((b - d) / 30.6001)
+    day = b - d - int(30.6001 * e)
+    month = e - 1 if e < 14 else e - 13
+    year = c - 4716 if month > 2 else c - 4715
+    return date(year, month, day)
+
+
 def _nth_weekday(year: int, month: int, weekday: int, nth: int, name: str) -> Holiday:
     current = date(year, month, 1)
     while current.weekday() != weekday:
         current += timedelta(days=1)
     current += timedelta(days=7 * (nth - 1))
     return Holiday(current, name)
+
+
+def _following_monday_if_needed(day: date, name: str) -> Holiday:
+    if day.weekday() == 0:
+        return Holiday(day, name)
+    return Holiday(day + timedelta(days=7 - day.weekday()), name)
 
 
 def _last_weekday(year: int, month: int, weekday: int, name: str) -> Holiday:
@@ -1472,7 +1507,7 @@ def _chile_holidays(year: int, easter: date) -> list[Holiday]:
         _relative(easter, -1, "Holy Saturday"),
         _fixed(year, 5, 1, "Labour Day"),
         _fixed(year, 5, 21, "Navy Day"),
-        _fixed(year, 6, 20, "National Indigenous Peoples Day"),
+        Holiday(_june_solstice_date(year), "National Indigenous Peoples Day"),
         _fixed(year, 7, 16, "Our Lady of Mount Carmel"),
         _fixed(year, 8, 15, "Assumption of Mary"),
         _fixed(year, 9, 18, "Independence Day"),
@@ -1488,20 +1523,25 @@ def _chile_holidays(year: int, easter: date) -> list[Holiday]:
 def _colombia_holidays(year: int, easter: date) -> list[Holiday]:
     return [
         _fixed(year, 1, 1, "New Year's Day"),
-        _nth_weekday(year, 1, 0, 2, "Epiphany observed"),
-        _nth_weekday(year, 3, 0, 3, "Saint Joseph's Day observed"),
+        _following_monday_if_needed(date(year, 1, 6), "Epiphany observed"),
+        _following_monday_if_needed(date(year, 3, 19), "Saint Joseph's Day observed"),
         _relative(easter, -3, "Maundy Thursday"),
         _relative(easter, -2, "Good Friday"),
         _fixed(year, 5, 1, "Labour Day"),
         _relative(easter, 43, "Ascension Day observed"),
         _relative(easter, 64, "Corpus Christi observed"),
         _relative(easter, 71, "Sacred Heart observed"),
+        _following_monday_if_needed(
+            date(year, 6, 29), "Saint Peter and Saint Paul observed"
+        ),
         _fixed(year, 7, 20, "Independence Day"),
         _fixed(year, 8, 7, "Battle of Boyaca"),
-        _nth_weekday(year, 8, 0, 3, "Assumption of Mary observed"),
-        _nth_weekday(year, 10, 0, 3, "Columbus Day observed"),
-        _nth_weekday(year, 11, 0, 1, "All Saints' Day observed"),
-        _nth_weekday(year, 11, 0, 2, "Independence of Cartagena observed"),
+        _following_monday_if_needed(date(year, 8, 15), "Assumption of Mary observed"),
+        _following_monday_if_needed(date(year, 10, 12), "Columbus Day observed"),
+        _following_monday_if_needed(date(year, 11, 1), "All Saints' Day observed"),
+        _following_monday_if_needed(
+            date(year, 11, 11), "Independence of Cartagena observed"
+        ),
         _fixed(year, 12, 8, "Immaculate Conception"),
         _fixed(year, 12, 25, "Christmas Day"),
     ]

@@ -194,6 +194,31 @@ def test_standard_holiday_profile_includes_south_american_regions():
         and holiday.name == "Independence Day"
         for holiday in candidates["CL"][2]
     )
+    assert any(
+        holiday.day.isoformat() == "2026-06-21"
+        and holiday.name == "National Indigenous Peoples Day"
+        for holiday in candidates["CL"][2]
+    )
+
+
+def test_colombia_holidays_use_source_date_monday_observance():
+    candidates = _candidate_holidays(2026)
+
+    assert any(
+        holiday.day.isoformat() == "2026-06-29"
+        and holiday.name == "Saint Peter and Saint Paul observed"
+        for holiday in candidates["CO"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-10-12"
+        and holiday.name == "Columbus Day observed"
+        for holiday in candidates["CO"][2]
+    )
+    assert not any(
+        holiday.day.isoformat() == "2026-10-19"
+        and holiday.name == "Columbus Day observed"
+        for holiday in candidates["CO"][2]
+    )
 
 
 def test_public_worker_holiday_profile_adds_south_american_references():

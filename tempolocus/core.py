@@ -108,6 +108,16 @@ COUNTRY_TIMEZONE_OFFSETS: dict[str, tuple[str, set[int]]] = {
     "KZ": ("Kazakhstan", {5, 6}),
     "MN": ("Mongolia", {7, 8}),
     "ID": ("Indonesia", {7, 8, 9}),
+    "JP": ("Japan", {9}),
+    "KR": ("South Korea", {9}),
+    "KP": ("North Korea", {9}),
+    "CN": ("China", {8}),
+    "VN": ("Vietnam", {7}),
+    "TH": ("Thailand", {7}),
+    "SG": ("Singapore", {8}),
+    "MY": ("Malaysia", {8}),
+    "PH": ("Philippines", {8}),
+    "IN": ("India", {5}),
     "AU": ("Australia", {8, 9, 10}),
     "FM": ("Micronesia", {10, 11}),
     "KI": ("Kiribati", {12, 13, 14}),
@@ -728,6 +738,12 @@ def _candidate_holidays(
         "JP": ("JP", "Japan", _japan_holidays(year)),
         "KR": ("KR", "South Korea", _south_korea_holidays(year)),
         "CN": ("CN", "China", _china_holidays(year)),
+        "KP": ("KP", "North Korea", _north_korea_holidays(year)),
+        "VN": ("VN", "Vietnam", _vietnam_holidays(year)),
+        "TH": ("TH", "Thailand", _thailand_holidays(year)),
+        "SG": ("SG", "Singapore", _singapore_holidays(year)),
+        "MY": ("MY", "Malaysia", _malaysia_holidays(year)),
+        "PH": ("PH", "Philippines", _philippines_holidays(year)),
         "IN": ("IN", "India", _india_holidays(year)),
         "BR": ("BR", "Brazil", _brazil_holidays(year, easter)),
         "CL": ("CL", "Chile", _chile_holidays(year, easter)),
@@ -1406,7 +1422,7 @@ def _japan_holidays(year: int) -> list[Holiday]:
 
 
 def _south_korea_holidays(year: int) -> list[Holiday]:
-    return [
+    holidays = [
         _fixed(year, 1, 1, "New Year's Day"),
         _fixed(year, 3, 1, "Independence Movement Day"),
         _fixed(year, 5, 5, "Children's Day"),
@@ -1415,6 +1431,115 @@ def _south_korea_holidays(year: int) -> list[Holiday]:
         _fixed(year, 10, 3, "National Foundation Day"),
         _fixed(year, 10, 9, "Hangul Day"),
         _fixed(year, 12, 25, "Christmas Day"),
+    ]
+    if seollal := _chinese_new_year(year):
+        holidays.extend(
+            Holiday(seollal + timedelta(days=offset), "Seollal")
+            for offset in (-1, 0, 1)
+        )
+    if chuseok := _korean_chuseok(year):
+        holidays.extend(
+            Holiday(chuseok + timedelta(days=offset), "Chuseok")
+            for offset in (-1, 0, 1)
+        )
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
+
+
+def _north_korea_holidays(year: int) -> list[Holiday]:
+    holidays = [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 2, 16, "Day of the Shining Star"),
+        _fixed(year, 4, 15, "Day of the Sun"),
+        _fixed(year, 4, 25, "Korean People's Revolutionary Army Foundation Day"),
+        _fixed(year, 5, 1, "International Workers' Day"),
+        _fixed(year, 7, 27, "Victory Day"),
+        _fixed(year, 8, 15, "Liberation Day"),
+        _fixed(year, 9, 9, "National Day"),
+        _fixed(year, 10, 10, "Party Foundation Day"),
+        _fixed(year, 12, 27, "Constitution Day"),
+    ]
+    if seollal := _chinese_new_year(year):
+        holidays.append(Holiday(seollal, "Korean Lunar New Year"))
+    if chuseok := _korean_chuseok(year):
+        holidays.append(Holiday(chuseok, "Chuseok"))
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
+
+
+def _vietnam_holidays(year: int) -> list[Holiday]:
+    holidays = [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 4, 30, "Reunification Day"),
+        _fixed(year, 5, 1, "International Workers' Day"),
+        _fixed(year, 9, 2, "National Day"),
+    ]
+    if tet := _chinese_new_year(year):
+        holidays.extend(
+            Holiday(tet + timedelta(days=offset), "Tet") for offset in range(5)
+        )
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
+
+
+def _thailand_holidays(year: int) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 4, 6, "Chakri Memorial Day"),
+        _fixed(year, 4, 13, "Songkran"),
+        _fixed(year, 4, 14, "Songkran"),
+        _fixed(year, 4, 15, "Songkran"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 7, 28, "King's Birthday"),
+        _fixed(year, 8, 12, "Queen Mother's Birthday"),
+        _fixed(year, 10, 13, "King Bhumibol Memorial Day"),
+        _fixed(year, 12, 5, "National Day"),
+        _fixed(year, 12, 10, "Constitution Day"),
+        _fixed(year, 12, 31, "New Year's Eve"),
+    ]
+
+
+def _singapore_holidays(year: int) -> list[Holiday]:
+    holidays = [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 8, 9, "National Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+    if lunar_new_year := _chinese_new_year(year):
+        holidays.extend(
+            Holiday(lunar_new_year + timedelta(days=offset), "Chinese New Year")
+            for offset in range(2)
+        )
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
+
+
+def _malaysia_holidays(year: int) -> list[Holiday]:
+    holidays = [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 8, 31, "National Day"),
+        _fixed(year, 9, 16, "Malaysia Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+    if lunar_new_year := _chinese_new_year(year):
+        holidays.extend(
+            Holiday(lunar_new_year + timedelta(days=offset), "Chinese New Year")
+            for offset in range(2)
+        )
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
+
+
+def _philippines_holidays(year: int) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 2, 25, "People Power Anniversary"),
+        _fixed(year, 4, 9, "Day of Valor"),
+        _fixed(year, 5, 1, "Labor Day"),
+        _fixed(year, 6, 12, "Independence Day"),
+        _fixed(year, 8, 21, "Ninoy Aquino Day"),
+        _last_weekday(year, 8, 0, "National Heroes Day"),
+        _fixed(year, 11, 1, "All Saints' Day"),
+        _fixed(year, 11, 30, "Bonifacio Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 30, "Rizal Day"),
     ]
 
 
@@ -1491,6 +1616,28 @@ def _chinese_new_year(year: int) -> date | None:
         2028: (1, 26),
         2029: (2, 13),
         2030: (2, 3),
+    }
+    if year not in dates:
+        return None
+    month, day = dates[year]
+    return date(year, month, day)
+
+
+def _korean_chuseok(year: int) -> date | None:
+    dates = {
+        2018: (9, 24),
+        2019: (9, 13),
+        2020: (10, 1),
+        2021: (9, 21),
+        2022: (9, 10),
+        2023: (9, 29),
+        2024: (9, 17),
+        2025: (10, 6),
+        2026: (9, 25),
+        2027: (9, 15),
+        2028: (10, 3),
+        2029: (9, 22),
+        2030: (9, 12),
     }
     if year not in dates:
         return None

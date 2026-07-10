@@ -197,8 +197,7 @@ def test_standard_holiday_profile_includes_south_american_regions():
 def test_colombia_holidays_use_source_date_observed_mondays():
     candidates = _candidate_holidays(2026)
     dates_by_name = {
-        holiday.name: holiday.day.isoformat()
-        for holiday in candidates["CO"][2]
+        holiday.name: holiday.day.isoformat() for holiday in candidates["CO"][2]
     }
 
     assert dates_by_name["Saint Peter and Saint Paul observed"] == "2026-06-29"
@@ -313,3 +312,45 @@ def test_arabic_region_profiles_include_eid_vacation_windows():
         "2026-05-29",
         "2026-05-30",
     }
+
+
+def test_standard_holiday_profile_includes_expanded_asia_pacific_regions():
+    candidates = _candidate_holidays(2026)
+
+    assert {"JP", "KR", "KP", "CN", "VN", "TH", "SG", "MY", "PH", "IN"} <= set(
+        candidates
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-04-15" and holiday.name == "Day of the Sun"
+        for holiday in candidates["KP"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-04-13" and holiday.name == "Songkran"
+        for holiday in candidates["TH"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-09-02" and holiday.name == "National Day"
+        for holiday in candidates["VN"][2]
+    )
+
+
+def test_korean_holiday_profiles_include_lunar_seollal_and_chuseok_windows():
+    candidates = _candidate_holidays(2026)
+    south_korea_seollal = {
+        holiday.day.isoformat()
+        for holiday in candidates["KR"][2]
+        if holiday.name == "Seollal"
+    }
+    south_korea_chuseok = {
+        holiday.day.isoformat()
+        for holiday in candidates["KR"][2]
+        if holiday.name == "Chuseok"
+    }
+    north_korea_lunar = {
+        (holiday.day.isoformat(), holiday.name) for holiday in candidates["KP"][2]
+    }
+
+    assert south_korea_seollal == {"2026-02-16", "2026-02-17", "2026-02-18"}
+    assert south_korea_chuseok == {"2026-09-24", "2026-09-25", "2026-09-26"}
+    assert ("2026-02-17", "Korean Lunar New Year") in north_korea_lunar
+    assert ("2026-09-25", "Chuseok") in north_korea_lunar

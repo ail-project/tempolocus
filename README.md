@@ -33,8 +33,10 @@ list that highlights countries whose multiple timezones appear in the top
 timezone-offset results. Yearly inputs rank broad regions by comparing
 activity on public-holiday calendars, including Orthodox calendar references for
 countries such as Bulgaria, Greece, Romania, Russia, Serbia, and Ukraine, plus
-South American calendars for Argentina, Brazil, Chile, Colombia, Peru, and
-Uruguay, plus Arabic-region and Israel vacation references for Algeria,
+Asia-Pacific calendars for Australia, China, India, Japan, Malaysia, New
+Zealand, North Korea, the Philippines, Singapore, South Korea, Thailand, and
+Vietnam, plus South American calendars for Argentina, Brazil, Chile, Colombia,
+Peru, and Uruguay, plus Arabic-region and Israel vacation references for Algeria,
 Bahrain, Egypt, Israel, Jordan, Kuwait, Lebanon, Morocco, Oman, Qatar, Saudi
 Arabia, Tunisia, and the United Arab Emirates.
 Yearly analysis treats a lack of activity on holidays as the default signal;

@@ -890,6 +890,37 @@ def _monday_on_or_after(day: date, name: str) -> Holiday:
     return Holiday(day + timedelta(days=(7 - day.weekday()) % 7), name)
 
 
+def _june_solstice_date(year: int) -> date:
+    y = (year - 2000) / 1000
+    julian_day = (
+        2451716.56767
+        + (365241.62603 * y)
+        + (0.00325 * y**2)
+        + (0.00888 * y**3)
+        - (0.00030 * y**4)
+    )
+    return _julian_day_to_date(julian_day)
+
+
+def _julian_day_to_date(julian_day: float) -> date:
+    julian_day_number = int(julian_day + 0.5)
+    if julian_day_number >= 2299161:
+        correction = int((julian_day_number - 1867216.25) / 36524.25)
+        adjusted = julian_day_number + 1 + correction - int(correction / 4)
+    else:
+        adjusted = julian_day_number
+
+    b = adjusted + 1524
+    c = int((b - 122.1) / 365.25)
+    d = int(365.25 * c)
+    e = int((b - d) / 30.6001)
+
+    day = b - d - int(30.6001 * e)
+    month = e - 1 if e < 14 else e - 13
+    year = c - 4716 if month > 2 else c - 4715
+    return date(year, month, day)
+
+
 def _nth_weekday(year: int, month: int, weekday: int, nth: int, name: str) -> Holiday:
     current = date(year, month, 1)
     while current.weekday() != weekday:
@@ -1500,7 +1531,7 @@ def _chile_holidays(year: int, easter: date) -> list[Holiday]:
         _relative(easter, -1, "Holy Saturday"),
         _fixed(year, 5, 1, "Labour Day"),
         _fixed(year, 5, 21, "Navy Day"),
-        _fixed(year, 6, _chile_winter_solstice_day(year), "National Indigenous Peoples Day"),
+        Holiday(_june_solstice_date(year), "National Indigenous Peoples Day"),
         _fixed(year, 7, 16, "Our Lady of Mount Carmel"),
         _fixed(year, 8, 15, "Assumption of Mary"),
         _fixed(year, 9, 18, "Independence Day"),
@@ -1511,23 +1542,6 @@ def _chile_holidays(year: int, easter: date) -> list[Holiday]:
         _fixed(year, 12, 8, "Immaculate Conception"),
         _fixed(year, 12, 25, "Christmas Day"),
     ]
-
-
-def _chile_winter_solstice_day(year: int) -> int:
-    solstice_days = {
-        2020: 20,
-        2021: 21,
-        2022: 21,
-        2023: 21,
-        2024: 20,
-        2025: 21,
-        2026: 21,
-        2027: 21,
-        2028: 20,
-        2029: 21,
-        2030: 21,
-    }
-    return solstice_days.get(year, 21)
 
 
 def _colombia_holidays(year: int, easter: date) -> list[Holiday]:

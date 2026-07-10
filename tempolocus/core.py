@@ -886,6 +886,10 @@ def _relative(base: date, days: int, name: str) -> Holiday:
     return Holiday(base + timedelta(days=days), name)
 
 
+def _monday_on_or_after(day: date, name: str) -> Holiday:
+    return Holiday(day + timedelta(days=(7 - day.weekday()) % 7), name)
+
+
 def _nth_weekday(year: int, month: int, weekday: int, nth: int, name: str) -> Holiday:
     current = date(year, month, 1)
     while current.weekday() != weekday:
@@ -1496,7 +1500,7 @@ def _chile_holidays(year: int, easter: date) -> list[Holiday]:
         _relative(easter, -1, "Holy Saturday"),
         _fixed(year, 5, 1, "Labour Day"),
         _fixed(year, 5, 21, "Navy Day"),
-        _fixed(year, 6, 20, "National Indigenous Peoples Day"),
+        _fixed(year, 6, _chile_winter_solstice_day(year), "National Indigenous Peoples Day"),
         _fixed(year, 7, 16, "Our Lady of Mount Carmel"),
         _fixed(year, 8, 15, "Assumption of Mary"),
         _fixed(year, 9, 18, "Independence Day"),
@@ -1509,23 +1513,41 @@ def _chile_holidays(year: int, easter: date) -> list[Holiday]:
     ]
 
 
+def _chile_winter_solstice_day(year: int) -> int:
+    solstice_days = {
+        2020: 20,
+        2021: 21,
+        2022: 21,
+        2023: 21,
+        2024: 20,
+        2025: 21,
+        2026: 21,
+        2027: 21,
+        2028: 20,
+        2029: 21,
+        2030: 21,
+    }
+    return solstice_days.get(year, 21)
+
+
 def _colombia_holidays(year: int, easter: date) -> list[Holiday]:
     return [
         _fixed(year, 1, 1, "New Year's Day"),
-        _nth_weekday(year, 1, 0, 2, "Epiphany observed"),
-        _nth_weekday(year, 3, 0, 3, "Saint Joseph's Day observed"),
+        _monday_on_or_after(date(year, 1, 6), "Epiphany observed"),
+        _monday_on_or_after(date(year, 3, 19), "Saint Joseph's Day observed"),
         _relative(easter, -3, "Maundy Thursday"),
         _relative(easter, -2, "Good Friday"),
         _fixed(year, 5, 1, "Labour Day"),
         _relative(easter, 43, "Ascension Day observed"),
         _relative(easter, 64, "Corpus Christi observed"),
         _relative(easter, 71, "Sacred Heart observed"),
+        _monday_on_or_after(date(year, 6, 29), "Saint Peter and Saint Paul observed"),
         _fixed(year, 7, 20, "Independence Day"),
         _fixed(year, 8, 7, "Battle of Boyaca"),
-        _nth_weekday(year, 8, 0, 3, "Assumption of Mary observed"),
-        _nth_weekday(year, 10, 0, 3, "Columbus Day observed"),
-        _nth_weekday(year, 11, 0, 1, "All Saints' Day observed"),
-        _nth_weekday(year, 11, 0, 2, "Independence of Cartagena observed"),
+        _monday_on_or_after(date(year, 8, 15), "Assumption of Mary observed"),
+        _monday_on_or_after(date(year, 10, 12), "Columbus Day observed"),
+        _monday_on_or_after(date(year, 11, 1), "All Saints' Day observed"),
+        _monday_on_or_after(date(year, 11, 11), "Independence of Cartagena observed"),
         _fixed(year, 12, 8, "Immaculate Conception"),
         _fixed(year, 12, 25, "Christmas Day"),
     ]

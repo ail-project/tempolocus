@@ -1725,17 +1725,101 @@ def _egypt_holidays(year: int) -> list[Holiday]:
     )
 
 
+def _hebrew_calendar_elapsed_days(year: int) -> int:
+    months_elapsed = (
+        235 * ((year - 1) // 19)
+        + 12 * ((year - 1) % 19)
+        + (7 * ((year - 1) % 19) + 1) // 19
+    )
+    parts = 204 + 793 * (months_elapsed % 1080)
+    hours = 5 + 12 * months_elapsed + 793 * (months_elapsed // 1080) + parts // 1080
+    day = 1 + 29 * months_elapsed + hours // 24
+    parts_remaining = 1080 * (hours % 24) + parts % 1080
+
+    if (
+        parts_remaining >= 19440
+        or (not _is_hebrew_leap_year(year) and day % 7 == 2 and parts_remaining >= 9924)
+        or (
+            _is_hebrew_leap_year(year - 1) and day % 7 == 1 and parts_remaining >= 16789
+        )
+    ):
+        day += 1
+
+    if day % 7 in {0, 3, 5}:
+        day += 1
+    return day
+
+
+def _is_hebrew_leap_year(year: int) -> bool:
+    return (7 * year + 1) % 19 < 7
+
+
+def _hebrew_year_days(year: int) -> int:
+    return _hebrew_calendar_elapsed_days(year + 1) - _hebrew_calendar_elapsed_days(year)
+
+
+def _hebrew_month_days(year: int, month: int) -> int:
+    if month in {2, 4, 6, 10, 13}:
+        return 29
+    if month == 12 and not _is_hebrew_leap_year(year):
+        return 29
+    if month == 8 and _hebrew_year_days(year) % 10 != 5:
+        return 29
+    if month == 9 and _hebrew_year_days(year) % 10 == 3:
+        return 29
+    return 30
+
+
+def _hebrew_to_gregorian(year: int, month: int, day: int) -> date:
+    # Absolute date of the Hebrew epoch relative to date.toordinal().
+    hebrew_epoch = -1373428
+    days = _hebrew_calendar_elapsed_days(year) + day - 1
+    if month >= 7:
+        days += sum(_hebrew_month_days(year, current) for current in range(7, month))
+    else:
+        last_month = 13 if _is_hebrew_leap_year(year) else 12
+        days += sum(
+            _hebrew_month_days(year, current) for current in range(7, last_month + 1)
+        )
+        days += sum(_hebrew_month_days(year, current) for current in range(1, month))
+    return date.fromordinal(hebrew_epoch + days)
+
+
+def _hebrew_holiday_for_gregorian_year(
+    year: int, hebrew_month: int, hebrew_day: int, name: str
+) -> list[Holiday]:
+    holidays = []
+    for hebrew_year in range(year + 3759, year + 3762):
+        holiday = _hebrew_to_gregorian(hebrew_year, hebrew_month, hebrew_day)
+        if holiday.year == year:
+            holidays.append(Holiday(holiday, name))
+    return holidays
+
+
+def _israel_independence_day(year: int) -> list[Holiday]:
+    holidays = []
+    for hebrew_year in range(year + 3759, year + 3762):
+        observed = _hebrew_to_gregorian(hebrew_year, 2, 5)
+        if observed.weekday() in {4, 5}:
+            observed -= timedelta(days=1 if observed.weekday() == 4 else 2)
+        elif observed.weekday() == 0:
+            observed += timedelta(days=1)
+        if observed.year == year:
+            holidays.append(Holiday(observed, "Independence Day reference"))
+    return holidays
+
+
 def _israel_holidays(year: int) -> list[Holiday]:
-    return [
-        _fixed(year, 4, 22, "Passover reference day"),
-        _fixed(year, 4, 29, "Passover final reference day"),
-        _fixed(year, 5, 1, "Independence Day reference"),
-        _fixed(year, 5, 22, "Shavuot reference day"),
-        _fixed(year, 9, 12, "Rosh Hashanah reference day"),
-        _fixed(year, 9, 21, "Yom Kippur reference day"),
-        _fixed(year, 9, 26, "Sukkot reference day"),
-        _fixed(year, 10, 3, "Simchat Torah reference day"),
-    ]
+    return _merge_holidays(
+        _hebrew_holiday_for_gregorian_year(year, 1, 15, "Passover reference day"),
+        _hebrew_holiday_for_gregorian_year(year, 1, 21, "Passover final reference day"),
+        _israel_independence_day(year),
+        _hebrew_holiday_for_gregorian_year(year, 3, 6, "Shavuot reference day"),
+        _hebrew_holiday_for_gregorian_year(year, 7, 1, "Rosh Hashanah reference day"),
+        _hebrew_holiday_for_gregorian_year(year, 7, 10, "Yom Kippur reference day"),
+        _hebrew_holiday_for_gregorian_year(year, 7, 15, "Sukkot reference day"),
+        _hebrew_holiday_for_gregorian_year(year, 7, 22, "Simchat Torah reference day"),
+    )
 
 
 def _qatar_holidays(year: int) -> list[Holiday]:

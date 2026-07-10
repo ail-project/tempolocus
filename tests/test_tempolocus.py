@@ -252,6 +252,23 @@ def test_standard_holiday_profile_includes_arabic_region_and_israel_references()
     )
 
 
+def test_israel_holiday_references_follow_hebrew_calendar_by_year():
+    candidates_2025 = _candidate_holidays(2025)
+    candidates_2027 = _candidate_holidays(2027)
+
+    israel_2025 = {
+        (holiday.day.isoformat(), holiday.name) for holiday in candidates_2025["IL"][2]
+    }
+    israel_2027 = {
+        (holiday.day.isoformat(), holiday.name) for holiday in candidates_2027["IL"][2]
+    }
+
+    assert ("2025-10-02", "Yom Kippur reference day") in israel_2025
+    assert ("2027-10-11", "Yom Kippur reference day") in israel_2027
+    assert ("2025-09-21", "Yom Kippur reference day") not in israel_2025
+    assert ("2027-09-21", "Yom Kippur reference day") not in israel_2027
+
+
 def test_arabic_region_profiles_include_eid_vacation_windows():
     candidates = _candidate_holidays(2026)
     uae_eid_al_fitr = {

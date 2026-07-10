@@ -112,6 +112,19 @@ COUNTRY_TIMEZONE_OFFSETS: dict[str, tuple[str, set[int]]] = {
     "FM": ("Micronesia", {10, 11}),
     "KI": ("Kiribati", {12, 13, 14}),
     "NZ": ("New Zealand", {-10, 12, 13}),
+    "AE": ("United Arab Emirates", {4}),
+    "SA": ("Saudi Arabia", {3}),
+    "EG": ("Egypt", {2, 3}),
+    "IL": ("Israel", {2, 3}),
+    "QA": ("Qatar", {3}),
+    "KW": ("Kuwait", {3}),
+    "BH": ("Bahrain", {3}),
+    "OM": ("Oman", {4}),
+    "JO": ("Jordan", {3}),
+    "LB": ("Lebanon", {2, 3}),
+    "MA": ("Morocco", {0, 1}),
+    "TN": ("Tunisia", {1}),
+    "DZ": ("Algeria", {1}),
 }
 
 
@@ -413,9 +426,7 @@ def analyze_weekly_activity(rows: list[tuple[int, int, float]]) -> dict[str, Any
     work_share = totals["work"] / total
     vacation_share = totals["vacation"] / total
     other_share = totals["other"] / total
-    expected_work_share = sum(
-        1 for day in range(5) for hour in range(8, 18)
-    ) / (7 * 24)
+    expected_work_share = sum(1 for day in range(5) for hour in range(8, 18)) / (7 * 24)
     expected_vacation_share = sum(
         1
         for day in range(7)
@@ -727,6 +738,19 @@ def _candidate_holidays(
         "AR": ("AR", "Argentina", _argentina_holidays(year, easter)),
         "AU": ("AU", "Australia", _australia_holidays(year, easter)),
         "NZ": ("NZ", "New Zealand", _new_zealand_holidays(year, easter)),
+        "AE": ("AE", "United Arab Emirates", _uae_holidays(year)),
+        "SA": ("SA", "Saudi Arabia", _saudi_arabia_holidays(year)),
+        "EG": ("EG", "Egypt", _egypt_holidays(year)),
+        "IL": ("IL", "Israel", _israel_holidays(year)),
+        "QA": ("QA", "Qatar", _qatar_holidays(year)),
+        "KW": ("KW", "Kuwait", _kuwait_holidays(year)),
+        "BH": ("BH", "Bahrain", _bahrain_holidays(year)),
+        "OM": ("OM", "Oman", _oman_holidays(year)),
+        "JO": ("JO", "Jordan", _jordan_holidays(year)),
+        "LB": ("LB", "Lebanon", _lebanon_holidays(year, easter)),
+        "MA": ("MA", "Morocco", _morocco_holidays(year)),
+        "TN": ("TN", "Tunisia", _tunisia_holidays(year)),
+        "DZ": ("DZ", "Algeria", _algeria_holidays(year)),
     }
     if include_public_worker:
         candidates.update(_public_worker_holiday_candidates(year, candidates))
@@ -1600,3 +1624,227 @@ def _new_zealand_holidays(year: int, easter: date) -> list[Holiday]:
         _fixed(year, 12, 25, "Christmas Day"),
         _fixed(year, 12, 26, "Boxing Day"),
     ]
+
+
+def _gregorian_from_jdn(jdn: int) -> date:
+    """Convert a Julian day number to a Gregorian date."""
+    a = jdn + 32044
+    b = (4 * a + 3) // 146097
+    c = a - (146097 * b) // 4
+    d = (4 * c + 3) // 1461
+    e = c - (1461 * d) // 4
+    m = (5 * e + 2) // 153
+    day = e - (153 * m + 2) // 5 + 1
+    month = m + 3 - 12 * (m // 10)
+    year = 100 * b + d - 4800 + (m // 10)
+    return date(year, month, day)
+
+
+def _islamic_to_gregorian(islamic_year: int, month: int, day: int) -> date:
+    """Return an approximate Gregorian date for a tabular Islamic calendar day."""
+    jdn = (
+        day
+        + math.ceil(29.5 * (month - 1))
+        + (islamic_year - 1) * 354
+        + math.floor((3 + (11 * islamic_year)) / 30)
+        + 1948439
+    )
+    return _gregorian_from_jdn(int(jdn))
+
+
+def _islamic_holidays_for_gregorian_year(
+    year: int, month: int, day: int, duration: int, name: str
+) -> list[Holiday]:
+    holidays = []
+    for islamic_year in range(year - 580, year - 576):
+        start = _islamic_to_gregorian(islamic_year, month, day)
+        for offset in range(duration):
+            current = start + timedelta(days=offset)
+            if current.year == year:
+                suffix = f" day {offset + 1}" if duration > 1 else ""
+                holidays.append(Holiday(current, f"{name}{suffix}"))
+    return holidays
+
+
+def _eid_al_fitr(year: int, duration: int = 3) -> list[Holiday]:
+    return _islamic_holidays_for_gregorian_year(year, 10, 1, duration, "Eid al-Fitr")
+
+
+def _eid_al_adha(year: int, duration: int = 4) -> list[Holiday]:
+    return _islamic_holidays_for_gregorian_year(year, 12, 10, duration, "Eid al-Adha")
+
+
+def _islamic_new_year(year: int) -> list[Holiday]:
+    return _islamic_holidays_for_gregorian_year(year, 1, 1, 1, "Islamic New Year")
+
+
+def _prophet_birthday(year: int) -> list[Holiday]:
+    return _islamic_holidays_for_gregorian_year(year, 3, 12, 1, "Prophet's Birthday")
+
+
+def _arab_islamic_holiday_set(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        _eid_al_fitr(year),
+        _eid_al_adha(year),
+        _islamic_new_year(year),
+        _prophet_birthday(year),
+    )
+
+
+def _uae_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 12, 2, "National Day"),
+            _fixed(year, 12, 3, "National Day holiday"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _saudi_arabia_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [_fixed(year, 2, 22, "Founding Day"), _fixed(year, 9, 23, "National Day")],
+        _eid_al_fitr(year, duration=4),
+        _eid_al_adha(year, duration=4),
+    )
+
+
+def _egypt_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 7, "Coptic Christmas"),
+            _fixed(year, 1, 25, "Revolution Day / Police Day"),
+            _fixed(year, 4, 25, "Sinai Liberation Day"),
+            _fixed(year, 5, 1, "Labour Day"),
+            _fixed(year, 6, 30, "June 30 Revolution"),
+            _fixed(year, 7, 23, "Revolution Day"),
+            _fixed(year, 10, 6, "Armed Forces Day"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _israel_holidays(year: int) -> list[Holiday]:
+    return [
+        _fixed(year, 4, 22, "Passover reference day"),
+        _fixed(year, 4, 29, "Passover final reference day"),
+        _fixed(year, 5, 1, "Independence Day reference"),
+        _fixed(year, 5, 22, "Shavuot reference day"),
+        _fixed(year, 9, 12, "Rosh Hashanah reference day"),
+        _fixed(year, 9, 21, "Yom Kippur reference day"),
+        _fixed(year, 9, 26, "Sukkot reference day"),
+        _fixed(year, 10, 3, "Simchat Torah reference day"),
+    ]
+
+
+def _qatar_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [_fixed(year, 12, 18, "National Day")], _eid_al_fitr(year), _eid_al_adha(year)
+    )
+
+
+def _kuwait_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 2, 25, "National Day"),
+            _fixed(year, 2, 26, "Liberation Day"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _bahrain_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 12, 16, "National Day"),
+            _fixed(year, 12, 17, "National Day holiday"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _oman_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 1, 11, "Accession Day"),
+            _fixed(year, 11, 18, "National Day"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _jordan_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 5, 1, "Labour Day"),
+            _fixed(year, 5, 25, "Independence Day"),
+            _fixed(year, 12, 25, "Christmas Day"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _lebanon_holidays(year: int, easter: date) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 2, 9, "Saint Maroun's Day"),
+            _fixed(year, 5, 1, "Labour Day"),
+            _fixed(year, 11, 22, "Independence Day"),
+            _fixed(year, 12, 25, "Christmas Day"),
+            _relative(easter, -2, "Good Friday"),
+            _relative(easter, 1, "Easter Monday"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _morocco_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 1, 11, "Independence Manifesto Day"),
+            _fixed(year, 5, 1, "Labour Day"),
+            _fixed(year, 7, 30, "Throne Day"),
+            _fixed(year, 8, 14, "Oued Ed-Dahab Day"),
+            _fixed(year, 8, 20, "Revolution Day"),
+            _fixed(year, 8, 21, "Youth Day"),
+            _fixed(year, 11, 6, "Green March"),
+            _fixed(year, 11, 18, "Independence Day"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _tunisia_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 3, 20, "Independence Day"),
+            _fixed(year, 4, 9, "Martyrs' Day"),
+            _fixed(year, 5, 1, "Labour Day"),
+            _fixed(year, 7, 25, "Republic Day"),
+            _fixed(year, 8, 13, "Women's Day"),
+            _fixed(year, 10, 15, "Evacuation Day"),
+            _fixed(year, 12, 17, "Revolution Day"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _algeria_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 1, 12, "Amazigh New Year"),
+            _fixed(year, 5, 1, "Labour Day"),
+            _fixed(year, 7, 5, "Independence Day"),
+            _fixed(year, 11, 1, "Revolution Day"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )

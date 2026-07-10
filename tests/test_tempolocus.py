@@ -185,13 +185,11 @@ def test_standard_holiday_profile_includes_south_american_regions():
 
     assert {"AR", "BR", "CL", "CO", "PE", "UY"} <= set(candidates)
     assert any(
-        holiday.day.isoformat() == "2026-07-28"
-        and holiday.name == "Independence Day"
+        holiday.day.isoformat() == "2026-07-28" and holiday.name == "Independence Day"
         for holiday in candidates["PE"][2]
     )
     assert any(
-        holiday.day.isoformat() == "2026-09-18"
-        and holiday.name == "Independence Day"
+        holiday.day.isoformat() == "2026-09-18" and holiday.name == "Independence Day"
         for holiday in candidates["CL"][2]
     )
 
@@ -219,3 +217,58 @@ def test_south_america_public_worker_profile_includes_bridge_closures():
     }
 
     assert {"2026-01-02", "2026-12-24", "2026-12-31"} <= dates
+
+
+def test_standard_holiday_profile_includes_arabic_region_and_israel_references():
+    candidates = _candidate_holidays(2026)
+
+    assert {
+        "AE",
+        "SA",
+        "EG",
+        "IL",
+        "QA",
+        "KW",
+        "BH",
+        "OM",
+        "JO",
+        "LB",
+        "MA",
+        "TN",
+        "DZ",
+    } <= set(candidates)
+    assert any(
+        holiday.day.isoformat() == "2026-12-02" and holiday.name == "National Day"
+        for holiday in candidates["AE"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-02-22" and holiday.name == "Founding Day"
+        for holiday in candidates["SA"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-09-21"
+        and holiday.name == "Yom Kippur reference day"
+        for holiday in candidates["IL"][2]
+    )
+
+
+def test_arabic_region_profiles_include_eid_vacation_windows():
+    candidates = _candidate_holidays(2026)
+    uae_eid_al_fitr = {
+        holiday.day.isoformat()
+        for holiday in candidates["AE"][2]
+        if holiday.name.startswith("Eid al-Fitr")
+    }
+    saudi_eid_al_adha = {
+        holiday.day.isoformat()
+        for holiday in candidates["SA"][2]
+        if holiday.name.startswith("Eid al-Adha")
+    }
+
+    assert uae_eid_al_fitr == {"2026-03-20", "2026-03-21", "2026-03-22"}
+    assert saudi_eid_al_adha == {
+        "2026-05-27",
+        "2026-05-28",
+        "2026-05-29",
+        "2026-05-30",
+    }

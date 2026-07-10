@@ -36,9 +36,11 @@ countries such as Bulgaria, Greece, Romania, Russia, Serbia, and Ukraine, plus
 Asia-Pacific calendars for Australia, China, India, Japan, Malaysia, New
 Zealand, North Korea, the Philippines, Singapore, South Korea, Thailand, and
 Vietnam, plus South American calendars for Argentina, Brazil, Chile, Colombia,
-Peru, and Uruguay, plus Arabic-region and Israel vacation references for Algeria,
-Bahrain, Egypt, Israel, Jordan, Kuwait, Lebanon, Morocco, Oman, Qatar, Saudi
-Arabia, Tunisia, and the United Arab Emirates.
+Peru, and Uruguay, plus African calendars for Côte d'Ivoire, Ethiopia,
+Ghana, Kenya, Nigeria, Senegal, and South Africa, plus Arabic-region and Israel
+vacation references for Algeria, Bahrain, Egypt, Israel, Jordan, Kuwait,
+Lebanon, Morocco, Oman, Qatar, Saudi Arabia, Tunisia, and the United Arab
+Emirates.
 Yearly analysis treats a lack of activity on holidays as the default signal;
 pass `--activity-signal peak` when unusually high activity is the indicator you
 want to match instead. Yearly analysis defaults to standard public holidays;

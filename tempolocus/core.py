@@ -100,6 +100,40 @@ COUNTRY_TIMEZONE_OFFSETS: dict[str, tuple[str, set[int]]] = {
     "EC": ("Ecuador", {-6, -5}),
     "PE": ("Peru", {-5}),
     "UY": ("Uruguay", {-3}),
+
+    "IE": ("Ireland", {0}),
+    "DE": ("Germany", {1}),
+    "IT": ("Italy", {1}),
+    "BE": ("Belgium", {1}),
+    "NL": ("Netherlands", {1}),
+    "CH": ("Switzerland", {1}),
+    "AT": ("Austria", {1}),
+    "PL": ("Poland", {1}),
+    "CZ": ("Czechia", {1}),
+    "SK": ("Slovakia", {1}),
+    "HU": ("Hungary", {1}),
+    "RO": ("Romania", {2}),
+    "GR": ("Greece", {2}),
+    "BG": ("Bulgaria", {2}),
+    "RS": ("Serbia", {1}),
+    "UA": ("Ukraine", {2}),
+    "DK": ("Denmark", {1}),
+    "NO": ("Norway", {1}),
+    "SE": ("Sweden", {1}),
+    "FI": ("Finland", {2}),
+    "IS": ("Iceland", {0}),
+    "LU": ("Luxembourg", {1}),
+    "EE": ("Estonia", {2}),
+    "LV": ("Latvia", {2}),
+    "LT": ("Lithuania", {2}),
+    "HR": ("Croatia", {1}),
+    "SI": ("Slovenia", {1}),
+    "BA": ("Bosnia and Herzegovina", {1}),
+    "CR": ("Costa Rica", {-6}),
+    "GT": ("Guatemala", {-6}),
+    "PA": ("Panama", {-5}),
+    "CU": ("Cuba", {-5}),
+    "DO": ("Dominican Republic", {-4}),
     "PT": ("Portugal", {-1, 0}),
     "ES": ("Spain", {0, 1}),
     "FR": ("France", {-10, -4, -3, 1, 3, 4, 11, 12}),
@@ -742,6 +776,14 @@ def _candidate_holidays(
         "NO": ("NO", "Norway", _norway_holidays(year, easter)),
         "SE": ("SE", "Sweden", _sweden_holidays(year, easter)),
         "FI": ("FI", "Finland", _finland_holidays(year, easter)),
+        "IS": ("IS", "Iceland", _iceland_holidays(year, easter)),
+        "LU": ("LU", "Luxembourg", _luxembourg_holidays(year, easter)),
+        "EE": ("EE", "Estonia", _estonia_holidays(year, easter)),
+        "LV": ("LV", "Latvia", _latvia_holidays(year, easter)),
+        "LT": ("LT", "Lithuania", _lithuania_holidays(year, easter)),
+        "HR": ("HR", "Croatia", _croatia_holidays(year, easter)),
+        "SI": ("SI", "Slovenia", _slovenia_holidays(year, easter)),
+        "BA": ("BA", "Bosnia and Herzegovina", _bosnia_holidays(year, easter)),
         "JP": ("JP", "Japan", _japan_holidays(year)),
         "KR": ("KR", "South Korea", _south_korea_holidays(year)),
         "CN": ("CN", "China", _china_holidays(year)),
@@ -759,6 +801,11 @@ def _candidate_holidays(
         "UY": ("UY", "Uruguay", _uruguay_holidays(year, easter)),
         "MX": ("MX", "Mexico", _mexico_holidays(year)),
         "AR": ("AR", "Argentina", _argentina_holidays(year, easter)),
+        "CR": ("CR", "Costa Rica", _costa_rica_holidays(year, easter)),
+        "GT": ("GT", "Guatemala", _guatemala_holidays(year, easter)),
+        "PA": ("PA", "Panama", _panama_holidays(year, easter)),
+        "CU": ("CU", "Cuba", _cuba_holidays(year, easter)),
+        "DO": ("DO", "Dominican Republic", _dominican_republic_holidays(year, easter)),
         "AU": ("AU", "Australia", _australia_holidays(year, easter)),
         "NZ": ("NZ", "New Zealand", _new_zealand_holidays(year, easter)),
         "AE": ("AE", "United Arab Emirates", _uae_holidays(year)),
@@ -1420,6 +1467,139 @@ def _finland_holidays(year: int, easter: date) -> list[Holiday]:
     ]
 
 
+
+def _iceland_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _relative(easter, -3, "Maundy Thursday"),
+        _relative(easter, -2, "Good Friday"),
+        _relative(easter, 1, "Easter Monday"),
+        _fixed(year, 4, 24, "First Day of Summer"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _relative(easter, 39, "Ascension Day"),
+        _relative(easter, 50, "Whit Monday"),
+        _fixed(year, 6, 17, "National Day"),
+        _fixed(year, 12, 24, "Christmas Eve"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 26, "Second Day of Christmas"),
+        _fixed(year, 12, 31, "New Year's Eve"),
+    ]
+
+
+def _luxembourg_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _relative(easter, 1, "Easter Monday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 5, 9, "Europe Day"),
+        _relative(easter, 39, "Ascension Day"),
+        _relative(easter, 50, "Whit Monday"),
+        _fixed(year, 6, 23, "National Day"),
+        _fixed(year, 8, 15, "Assumption of Mary"),
+        _fixed(year, 11, 1, "All Saints' Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 26, "Saint Stephen's Day"),
+    ]
+
+
+def _estonia_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 2, 24, "Independence Day"),
+        _relative(easter, -2, "Good Friday"),
+        _relative(easter, 0, "Easter Sunday"),
+        _fixed(year, 5, 1, "Spring Day"),
+        _fixed(year, 6, 23, "Victory Day"),
+        _fixed(year, 6, 24, "Midsummer Day"),
+        _fixed(year, 8, 20, "Restoration of Independence Day"),
+        _fixed(year, 12, 24, "Christmas Eve"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 26, "Boxing Day"),
+    ]
+
+
+def _latvia_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _relative(easter, -2, "Good Friday"),
+        _relative(easter, 1, "Easter Monday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 5, 4, "Restoration of Independence Day"),
+        _fixed(year, 6, 23, "Midsummer Eve"),
+        _fixed(year, 6, 24, "Midsummer Day"),
+        _fixed(year, 11, 18, "Proclamation Day"),
+        _fixed(year, 12, 24, "Christmas Eve"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 26, "Boxing Day"),
+    ]
+
+
+def _lithuania_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 2, 16, "Restoration of the State Day"),
+        _fixed(year, 3, 11, "Restoration of Independence Day"),
+        _relative(easter, 1, "Easter Monday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 6, 24, "Saint John's Day"),
+        _fixed(year, 7, 6, "Statehood Day"),
+        _fixed(year, 8, 15, "Assumption of Mary"),
+        _fixed(year, 11, 1, "All Saints' Day"),
+        _fixed(year, 12, 24, "Christmas Eve"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 26, "Second Day of Christmas"),
+    ]
+
+
+def _croatia_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 1, 6, "Epiphany"),
+        _relative(easter, 1, "Easter Monday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 5, 30, "Statehood Day"),
+        _relative(easter, 60, "Corpus Christi"),
+        _fixed(year, 6, 22, "Anti-Fascist Struggle Day"),
+        _fixed(year, 8, 5, "Victory and Homeland Thanksgiving Day"),
+        _fixed(year, 8, 15, "Assumption of Mary"),
+        _fixed(year, 11, 1, "All Saints' Day"),
+        _fixed(year, 11, 18, "Remembrance Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 26, "Saint Stephen's Day"),
+    ]
+
+
+def _slovenia_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 1, 2, "Second New Year's Day"),
+        _relative(easter, 1, "Easter Monday"),
+        _fixed(year, 4, 27, "Resistance Day"),
+        _fixed(year, 5, 1, "May Day"),
+        _fixed(year, 5, 2, "Second May Day"),
+        _fixed(year, 6, 25, "Statehood Day"),
+        _fixed(year, 8, 15, "Assumption of Mary"),
+        _fixed(year, 10, 31, "Reformation Day"),
+        _fixed(year, 11, 1, "All Saints' Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 26, "Independence and Unity Day"),
+    ]
+
+
+def _bosnia_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 1, 2, "Second New Year's Day"),
+        _fixed(year, 3, 1, "Independence Day"),
+        _relative(easter, -2, "Good Friday"),
+        _relative(easter, 1, "Easter Monday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 5, 2, "Second Labour Day"),
+        _fixed(year, 11, 25, "Statehood Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
 def _japan_holidays(year: int) -> list[Holiday]:
     return [
         _fixed(year, 1, 1, "New Year's Day"),
@@ -1797,6 +1977,86 @@ def _argentina_holidays(year: int, easter: date) -> list[Holiday]:
         _fixed(year, 5, 25, "May Revolution Day"),
         _fixed(year, 7, 9, "Independence Day"),
         _fixed(year, 12, 8, "Immaculate Conception"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
+
+def _costa_rica_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 4, 11, "Juan Santamaria Day"),
+        _relative(easter, -3, "Maundy Thursday"),
+        _relative(easter, -2, "Good Friday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 7, 25, "Annexation of Guanacaste"),
+        _fixed(year, 8, 2, "Our Lady of the Angels Day"),
+        _fixed(year, 8, 15, "Mother's Day"),
+        _fixed(year, 9, 15, "Independence Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
+def _guatemala_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _relative(easter, -3, "Maundy Thursday"),
+        _relative(easter, -2, "Good Friday"),
+        _relative(easter, -1, "Holy Saturday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 6, 30, "Army Day"),
+        _fixed(year, 9, 15, "Independence Day"),
+        _fixed(year, 10, 20, "Revolution Day"),
+        _fixed(year, 11, 1, "All Saints' Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
+def _panama_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _relative(easter, -47, "Carnival Monday"),
+        _relative(easter, -46, "Carnival Tuesday"),
+        _relative(easter, -2, "Good Friday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 11, 3, "Separation Day"),
+        _fixed(year, 11, 4, "Flag Day"),
+        _fixed(year, 11, 5, "Colon Day"),
+        _fixed(year, 11, 10, "First Cry of Independence"),
+        _fixed(year, 11, 28, "Independence Day"),
+        _fixed(year, 12, 8, "Mother's Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+    ]
+
+
+def _cuba_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "Triumph of the Revolution"),
+        _fixed(year, 1, 2, "Victory Day"),
+        _relative(easter, -2, "Good Friday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _fixed(year, 7, 25, "Revolution Anniversary Eve"),
+        _fixed(year, 7, 26, "National Rebellion Day"),
+        _fixed(year, 7, 27, "Revolution Anniversary Holiday"),
+        _fixed(year, 10, 10, "Independence Day"),
+        _fixed(year, 12, 25, "Christmas Day"),
+        _fixed(year, 12, 31, "New Year's Eve"),
+    ]
+
+
+def _dominican_republic_holidays(year: int, easter: date) -> list[Holiday]:
+    return [
+        _fixed(year, 1, 1, "New Year's Day"),
+        _fixed(year, 1, 6, "Epiphany"),
+        _fixed(year, 1, 21, "Our Lady of Altagracia"),
+        _fixed(year, 1, 26, "Duarte Day"),
+        _fixed(year, 2, 27, "Independence Day"),
+        _relative(easter, -2, "Good Friday"),
+        _fixed(year, 5, 1, "Labour Day"),
+        _relative(easter, 60, "Corpus Christi"),
+        _fixed(year, 8, 16, "Restoration Day"),
+        _fixed(year, 9, 24, "Our Lady of Mercedes"),
+        _fixed(year, 11, 6, "Constitution Day"),
         _fixed(year, 12, 25, "Christmas Day"),
     ]
 

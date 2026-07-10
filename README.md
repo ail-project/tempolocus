@@ -32,15 +32,17 @@ rank timezone offsets, representative IANA zones, and a `probable_countries`
 list that highlights countries whose multiple timezones appear in the top
 timezone-offset results. Yearly inputs rank broad regions by comparing
 activity on public-holiday calendars, including Orthodox calendar references for
-countries such as Bulgaria, Greece, Romania, Russia, Serbia, and Ukraine, plus
-Asia-Pacific calendars for Australia, China, India, Japan, Malaysia, New
-Zealand, North Korea, the Philippines, Singapore, South Korea, Thailand, and
-Vietnam, plus South American calendars for Argentina, Brazil, Chile, Colombia,
-Peru, and Uruguay, plus African calendars for Côte d'Ivoire, Ethiopia,
-Ghana, Kenya, Nigeria, Senegal, and South Africa, plus Arabic-region and Israel
-vacation references for Algeria, Bahrain, Egypt, Israel, Jordan, Kuwait,
-Lebanon, Morocco, Oman, Qatar, Saudi Arabia, Tunisia, and the United Arab
-Emirates.
+countries such as Bulgaria, Greece, Romania, Russia, Serbia, and Ukraine; expanded
+European references for the Baltics, Balkans, Iceland, and Luxembourg; North
+American calendars for Canada, Costa Rica, Cuba, the Dominican Republic,
+Guatemala, Mexico, Panama, and the United States; Asia-Pacific calendars for
+Australia, China, India, Japan, Malaysia, New Zealand, North Korea, the
+Philippines, Singapore, South Korea, Thailand, and Vietnam; South American
+calendars for Argentina, Brazil, Chile, Colombia, Peru, and Uruguay; African
+calendars for Côte d'Ivoire, Ethiopia, Ghana, Kenya, Nigeria, Senegal, and
+South Africa; plus Arabic-region and Israel vacation references for Algeria,
+Bahrain, Egypt, Israel, Jordan, Kuwait, Lebanon, Morocco, Oman, Qatar, Saudi
+Arabia, Tunisia, and the United Arab Emirates.
 Yearly analysis treats a lack of activity on holidays as the default signal;
 pass `--activity-signal peak` when unusually high activity is the indicator you
 want to match instead. Yearly analysis defaults to standard public holidays;

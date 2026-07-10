@@ -4,11 +4,15 @@ tempolocus looks at time-series activity patterns to infer a location.
 
 ## Using tempolocus 
 
-`tempolocus` accepts two JSON shapes:
+`tempolocus` accepts two JSON shapes plus timestamp-list imports:
 
 - Weekly hourly buckets: a list of objects containing `day`, `hour`, and `count`.
 - Yearly daily buckets: an object containing `year`, `max`, and `nb`, where `nb`
   is a list of `[YYYY-MM-DD, count]` pairs.
+- Timestamp lists: either a JSON list of UTC timestamp strings / Unix epoch
+  seconds, or a plain text file with one timestamp per line. This is useful for
+  PE `TimeDateStamp` / compiled-timestamp values and other event lists that
+  should be aggregated into weekly patterns.
 
 Run it from the repository:
 
@@ -24,9 +28,12 @@ python -m pip install -e .
 tempolocus samples/year-chan1.json --top 10
 tempolocus samples/year.json --holiday-profile public-worker --format text
 tempolocus samples/year.json --activity-signal peak --format text
+tempolocus timestamps.txt --kind timestamps --format text
 ```
 
-The output is probabilistic JSON and includes a generic `analysis.activity_type`
+Timestamp strings may use ISO-8601 forms such as `2026-01-05T09:15:00Z`
+or `2026-01-05 09:15:00 UTC`; numeric entries are interpreted as Unix epoch
+seconds in UTC. The output is probabilistic JSON and includes a generic `analysis.activity_type`
 classification of `work-time`, `vacation-time`, or `mixed-time`. Weekly inputs
 rank timezone offsets, representative IANA zones, and a `probable_countries`
 list that highlights countries whose multiple timezones appear in the top

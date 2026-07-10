@@ -12,7 +12,7 @@ import calendar
 import json
 import math
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 from statistics import mean, median
 from typing import Any, Iterable
@@ -212,6 +212,26 @@ def load_json(path: str | Path) -> Any:
         return json.load(handle)
 
 
+def load_input(path: str | Path) -> Any:
+    """Load JSON inputs or a plain text timestamp list.
+
+    JSON remains the primary import format. If the file is not valid JSON, each
+    non-empty, non-comment line is interpreted as one UTC timestamp.
+    """
+    text = Path(path).read_text(encoding="utf-8")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        timestamps = [
+            line.strip()
+            for line in text.splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        if not timestamps:
+            raise
+        return timestamps
+
+
 def detect(
     data: Any,
     kind: str = "auto",
@@ -225,6 +245,8 @@ def detect(
     detected = _detect_kind(data) if kind == "auto" else kind
     if detected == "weekly":
         return infer_weekly(data, top=top)
+    if detected == "timestamps":
+        return infer_timestamps(data, top=top)
     if detected == "yearly":
         return infer_yearly(
             data,
@@ -242,6 +264,8 @@ def _detect_kind(data: Any) -> str:
             for item in data
         ):
             return "weekly"
+        if all(isinstance(item, (str, int, float)) for item in data):
+            return "timestamps"
     if isinstance(data, dict) and isinstance(data.get("nb"), list):
         return "yearly"
     raise DetectionError("could not auto-detect input kind")
@@ -331,6 +355,27 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
         "results": top_timezone_candidates,
     }
 
+
+def infer_timestamps(data: Any, top: int = 5) -> dict[str, Any]:
+    """Infer timezone candidates from a list of UTC timestamps.
+
+    Timestamps are normalized into weekly UTC day/hour buckets and then passed
+    through the same weekly activity inference used by the structured JSON
+    format.
+    """
+    rows = _timestamps_to_weekly_rows(_parse_timestamps(data))
+    result = infer_weekly(
+        [{"day": day, "hour": hour, "count": count} for day, hour, count in rows],
+        top=top,
+    )
+    result["input_type"] = "timestamp_list"
+    result["assumptions"] = [
+        "Timestamp lists are interpreted as UTC instants and aggregated into weekly hourly buckets.",
+        "Plain text imports accept one timestamp per line; JSON imports accept a list of timestamp strings or Unix epoch seconds such as PE TimeDateStamp values.",
+        *result["assumptions"],
+    ]
+    result["signals"]["timestamps_seen"] = int(sum(count for _, _, count in rows))
+    return result
 
 def infer_yearly(
     data: Any,
@@ -450,6 +495,10 @@ def analyze_activity(data: Any, kind: str = "auto") -> dict[str, Any]:
     detected = _detect_kind(data) if kind == "auto" else kind
     if detected == "weekly":
         return analyze_weekly_activity(_parse_weekly_rows(data))
+    if detected == "timestamps":
+        return analyze_weekly_activity(
+            _timestamps_to_weekly_rows(_parse_timestamps(data))
+        )
     if detected == "yearly":
         observed = _parse_yearly_rows(data)
         if not observed:
@@ -544,6 +593,60 @@ def analyze_yearly_activity(series: dict[date, float]) -> dict[str, Any]:
             "expected_weekend_days": round(expected_weekend_share, 6),
         },
     }
+
+
+def _parse_timestamps(data: Any) -> list[datetime]:
+    if not isinstance(data, list):
+        raise DetectionError("timestamp input must be a list")
+    timestamps = []
+    for index, item in enumerate(data):
+        try:
+            timestamps.append(_parse_timestamp(item))
+        except (TypeError, ValueError, OSError, OverflowError) as exc:
+            raise DetectionError(
+                f"timestamp row {index} contains an invalid UTC timestamp"
+            ) from exc
+    return timestamps
+
+
+def _parse_timestamp(value: Any) -> datetime:
+    if isinstance(value, bool):
+        raise TypeError("booleans are not timestamps")
+    if isinstance(value, (int, float)):
+        return datetime.fromtimestamp(value, tz=timezone.utc)
+    if not isinstance(value, str):
+        raise TypeError("timestamp must be a string or Unix epoch number")
+
+    text = value.strip()
+    if not text:
+        raise ValueError("empty timestamp")
+    if text.isdigit() or (text.startswith("-") and text[1:].isdigit()):
+        return datetime.fromtimestamp(int(text), tz=timezone.utc)
+
+    normalized = text
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+    if normalized.upper().endswith(" UTC"):
+        normalized = normalized[:-4] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        parsed = datetime.strptime(text, "%a, %d %b %Y %H:%M:%S %Z")
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _timestamps_to_weekly_rows(
+    timestamps: list[datetime],
+) -> list[tuple[int, int, float]]:
+    if not timestamps:
+        raise DetectionError("timestamp input has no activity")
+    buckets: dict[tuple[int, int], float] = {}
+    for stamp in timestamps:
+        key = (stamp.weekday(), stamp.hour)
+        buckets[key] = buckets.get(key, 0.0) + 1.0
+    return [(day, hour, count) for (day, hour), count in sorted(buckets.items())]
 
 
 def _parse_weekly_rows(data: Any) -> list[tuple[int, int, float]]:

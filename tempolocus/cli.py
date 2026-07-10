@@ -7,19 +7,23 @@ import json
 import sys
 from pathlib import Path
 
-from .core import DetectionError, detect, load_json
+from .core import DetectionError, detect, load_input
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tempolocus",
-        description="Guess likely timezone or region from temporal JSON activity.",
+        description="Guess likely timezone or region from temporal JSON or timestamp activity.",
     )
-    parser.add_argument("input", type=Path, help="JSON file to analyse")
+    parser.add_argument(
+        "input",
+        type=Path,
+        help="JSON file or plain text timestamp list to analyse",
+    )
     parser.add_argument(
         "-k",
         "--kind",
-        choices=("auto", "weekly", "yearly"),
+        choices=("auto", "weekly", "yearly", "timestamps"),
         default="auto",
         help="Input kind. Defaults to auto-detection.",
     )
@@ -84,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        data = load_json(args.input)
+        data = load_input(args.input)
         result = detect(
             data,
             kind=args.kind,

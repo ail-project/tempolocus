@@ -427,3 +427,26 @@ def test_standard_holiday_profile_includes_expanded_europe_regions():
         holiday.day.isoformat() == "2026-11-18" and holiday.name == "Remembrance Day"
         for holiday in candidates["HR"][2]
     )
+
+
+def test_json_timestamp_list_is_detected_and_aggregated_as_weekly_activity():
+    data = [
+        "2026-01-05T09:15:00Z",
+        "2026-01-05T09:45:00+00:00",
+        "2026-01-06 10:00:00 UTC",
+        1767603600,
+    ]
+
+    result = detect(data, top=3)
+
+    assert result["input_type"] == "timestamp_list"
+    assert result["signals"]["timestamps_seen"] == 4
+    assert result["results"][0]["kind"] == "timezone"
+    assert "Unix epoch seconds" in result["assumptions"][1]
+
+
+def test_timestamp_list_can_be_forced():
+    result = detect(["2026-01-05T09:15:00Z"], kind="timestamps", top=1)
+
+    assert result["input_type"] == "timestamp_list"
+    assert len(result["results"]) == 1

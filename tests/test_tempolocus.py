@@ -354,3 +354,44 @@ def test_korean_holiday_profiles_include_lunar_seollal_and_chuseok_windows():
     assert south_korea_chuseok == {"2026-09-24", "2026-09-25", "2026-09-26"}
     assert ("2026-02-17", "Korean Lunar New Year") in north_korea_lunar
     assert ("2026-09-25", "Chuseok") in north_korea_lunar
+
+
+def test_standard_holiday_profile_includes_expanded_african_regions():
+    candidates = _candidate_holidays(2026)
+
+    assert {"NG", "GH", "CI", "SN", "KE", "ET", "ZA"} <= set(candidates)
+    assert any(
+        holiday.day.isoformat() == "2026-06-12" and holiday.name == "Democracy Day"
+        for holiday in candidates["NG"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-08-10"
+        and holiday.name == "National Women's Day observed"
+        for holiday in candidates["ZA"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-06-01" and holiday.name == "Madaraka Day"
+        for holiday in candidates["KE"][2]
+    )
+
+
+def test_west_african_profiles_include_shared_eid_windows():
+    candidates = _candidate_holidays(2026)
+    nigeria_eid_al_fitr = {
+        holiday.day.isoformat()
+        for holiday in candidates["NG"][2]
+        if holiday.name.startswith("Eid al-Fitr")
+    }
+    senegal_eid_al_adha = {
+        holiday.day.isoformat()
+        for holiday in candidates["SN"][2]
+        if holiday.name.startswith("Eid al-Adha")
+    }
+
+    assert nigeria_eid_al_fitr == {"2026-03-20", "2026-03-21"}
+    assert senegal_eid_al_adha == {
+        "2026-05-27",
+        "2026-05-28",
+        "2026-05-29",
+        "2026-05-30",
+    }

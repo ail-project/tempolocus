@@ -135,6 +135,13 @@ COUNTRY_TIMEZONE_OFFSETS: dict[str, tuple[str, set[int]]] = {
     "MA": ("Morocco", {0, 1}),
     "TN": ("Tunisia", {1}),
     "DZ": ("Algeria", {1}),
+    "NG": ("Nigeria", {1}),
+    "GH": ("Ghana", {0}),
+    "CI": ("Côte d'Ivoire", {0}),
+    "SN": ("Senegal", {0}),
+    "KE": ("Kenya", {3}),
+    "ET": ("Ethiopia", {3}),
+    "ZA": ("South Africa", {2}),
 }
 
 
@@ -767,6 +774,13 @@ def _candidate_holidays(
         "MA": ("MA", "Morocco", _morocco_holidays(year)),
         "TN": ("TN", "Tunisia", _tunisia_holidays(year)),
         "DZ": ("DZ", "Algeria", _algeria_holidays(year)),
+        "NG": ("NG", "Nigeria", _nigeria_holidays(year, easter)),
+        "GH": ("GH", "Ghana", _ghana_holidays(year, easter)),
+        "CI": ("CI", "Côte d'Ivoire", _cote_divoire_holidays(year, easter)),
+        "SN": ("SN", "Senegal", _senegal_holidays(year, easter)),
+        "KE": ("KE", "Kenya", _kenya_holidays(year, easter)),
+        "ET": ("ET", "Ethiopia", _ethiopia_holidays(year)),
+        "ZA": ("ZA", "South Africa", _south_africa_holidays(year, easter)),
     }
     if include_public_worker:
         candidates.update(_public_worker_holiday_candidates(year, candidates))
@@ -904,6 +918,12 @@ def _relative(base: date, days: int, name: str) -> Holiday:
 
 def _monday_on_or_after(day: date, name: str) -> Holiday:
     return Holiday(day + timedelta(days=(7 - day.weekday()) % 7), name)
+
+
+def _sunday_observed_monday(holiday: Holiday) -> list[Holiday]:
+    if holiday.day.weekday() != 6:
+        return [holiday]
+    return [holiday, Holiday(holiday.day + timedelta(days=1), f"{holiday.name} observed")]
 
 
 def _june_solstice_date(year: int) -> date:
@@ -1907,6 +1927,150 @@ def _egypt_holidays(year: int) -> list[Holiday]:
         _arab_islamic_holiday_set(year),
     )
 
+
+
+def _african_fixed_with_sunday_observance(
+    year: int, fixed_holidays: list[tuple[int, int, str]]
+) -> list[Holiday]:
+    holidays: list[Holiday] = []
+    for month, day, name in fixed_holidays:
+        holidays.extend(_sunday_observed_monday(_fixed(year, month, day, name)))
+    return holidays
+
+
+def _nigeria_holidays(year: int, easter: date) -> list[Holiday]:
+    return _merge_holidays(
+        _african_fixed_with_sunday_observance(
+            year,
+            [
+                (1, 1, "New Year's Day"),
+                (5, 1, "Workers' Day"),
+                (6, 12, "Democracy Day"),
+                (10, 1, "Independence Day"),
+                (12, 25, "Christmas Day"),
+                (12, 26, "Boxing Day"),
+            ],
+        ),
+        [_relative(easter, -2, "Good Friday"), _relative(easter, 1, "Easter Monday")],
+        _eid_al_fitr(year, duration=2),
+        _eid_al_adha(year, duration=2),
+        _prophet_birthday(year),
+    )
+
+
+def _ghana_holidays(year: int, easter: date) -> list[Holiday]:
+    return _merge_holidays(
+        _african_fixed_with_sunday_observance(
+            year,
+            [
+                (1, 1, "New Year's Day"),
+                (1, 7, "Constitution Day"),
+                (3, 6, "Independence Day"),
+                (5, 1, "May Day"),
+                (8, 4, "Founders' Day"),
+                (9, 21, "Kwame Nkrumah Memorial Day"),
+                (12, 5, "Farmers' Day"),
+                (12, 25, "Christmas Day"),
+                (12, 26, "Boxing Day"),
+            ],
+        ),
+        [_relative(easter, -2, "Good Friday"), _relative(easter, 1, "Easter Monday")],
+        _eid_al_fitr(year),
+        _eid_al_adha(year),
+    )
+
+
+def _cote_divoire_holidays(year: int, easter: date) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 5, 1, "Labour Day"),
+            _fixed(year, 8, 7, "Independence Day"),
+            _fixed(year, 11, 15, "National Peace Day"),
+            _fixed(year, 12, 25, "Christmas Day"),
+            _relative(easter, 1, "Easter Monday"),
+            _relative(easter, 39, "Ascension Day"),
+            _relative(easter, 50, "Whit Monday"),
+            _fixed(year, 8, 15, "Assumption of Mary"),
+            _fixed(year, 11, 1, "All Saints' Day"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _senegal_holidays(year: int, easter: date) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 1, "New Year's Day"),
+            _fixed(year, 4, 4, "Independence Day"),
+            _fixed(year, 5, 1, "Labour Day"),
+            _fixed(year, 8, 15, "Assumption of Mary"),
+            _fixed(year, 11, 1, "All Saints' Day"),
+            _fixed(year, 12, 25, "Christmas Day"),
+            _relative(easter, 1, "Easter Monday"),
+            _relative(easter, 39, "Ascension Day"),
+            _relative(easter, 50, "Whit Monday"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _kenya_holidays(year: int, easter: date) -> list[Holiday]:
+    return _merge_holidays(
+        _african_fixed_with_sunday_observance(
+            year,
+            [
+                (1, 1, "New Year's Day"),
+                (5, 1, "Labour Day"),
+                (6, 1, "Madaraka Day"),
+                (10, 10, "Mazingira Day"),
+                (10, 20, "Mashujaa Day"),
+                (12, 12, "Jamhuri Day"),
+                (12, 25, "Christmas Day"),
+                (12, 26, "Boxing Day"),
+            ],
+        ),
+        [_relative(easter, -2, "Good Friday"), _relative(easter, 1, "Easter Monday")],
+        _eid_al_fitr(year),
+        _eid_al_adha(year),
+    )
+
+
+def _ethiopia_holidays(year: int) -> list[Holiday]:
+    return _merge_holidays(
+        [
+            _fixed(year, 1, 7, "Ethiopian Christmas"),
+            _fixed(year, 1, 19, "Timkat"),
+            _fixed(year, 3, 2, "Adwa Victory Day"),
+            _fixed(year, 5, 1, "International Labour Day"),
+            _fixed(year, 5, 5, "Patriots' Victory Day"),
+            _fixed(year, 5, 28, "Derg Downfall Day"),
+            _fixed(year, 9, 11, "Ethiopian New Year"),
+            _fixed(year, 9, 27, "Meskel"),
+        ],
+        _arab_islamic_holiday_set(year),
+    )
+
+
+def _south_africa_holidays(year: int, easter: date) -> list[Holiday]:
+    return _merge_holidays(
+        _african_fixed_with_sunday_observance(
+            year,
+            [
+                (1, 1, "New Year's Day"),
+                (3, 21, "Human Rights Day"),
+                (4, 27, "Freedom Day"),
+                (5, 1, "Workers' Day"),
+                (6, 16, "Youth Day"),
+                (8, 9, "National Women's Day"),
+                (9, 24, "Heritage Day"),
+                (12, 16, "Day of Reconciliation"),
+                (12, 25, "Christmas Day"),
+                (12, 26, "Day of Goodwill"),
+            ],
+        ),
+        [_relative(easter, -2, "Good Friday"), _relative(easter, 1, "Family Day")],
+    )
 
 def _hebrew_calendar_elapsed_days(year: int) -> int:
     months_elapsed = (

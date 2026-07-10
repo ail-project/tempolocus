@@ -196,6 +196,30 @@ def test_standard_holiday_profile_includes_south_american_regions():
     )
 
 
+def test_colombia_holidays_use_source_date_observed_mondays():
+    candidates = _candidate_holidays(2026)
+    dates_by_name = {
+        holiday.name: holiday.day.isoformat()
+        for holiday in candidates["CO"][2]
+    }
+
+    assert dates_by_name["Saint Peter and Saint Paul observed"] == "2026-06-29"
+    assert dates_by_name["Columbus Day observed"] == "2026-10-12"
+    assert dates_by_name["Assumption of Mary observed"] == "2026-08-17"
+    assert dates_by_name["All Saints' Day observed"] == "2026-11-02"
+    assert dates_by_name["Independence of Cartagena observed"] == "2026-11-16"
+
+
+def test_chile_indigenous_peoples_day_uses_winter_solstice_date():
+    candidates = _candidate_holidays(2026)
+
+    assert any(
+        holiday.day.isoformat() == "2026-06-21"
+        and holiday.name == "National Indigenous Peoples Day"
+        for holiday in candidates["CL"][2]
+    )
+
+
 def test_public_worker_holiday_profile_adds_south_american_references():
     result = detect(load_sample("year.json"), top=80, holiday_profile="public-worker")
 

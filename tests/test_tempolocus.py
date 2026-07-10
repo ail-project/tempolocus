@@ -55,7 +55,7 @@ def test_kind_can_be_forced():
 
 
 def test_public_worker_holiday_profile_adds_sector_references():
-    result = detect(load_sample("year.json"), top=80, holiday_profile="public-worker")
+    result = detect(load_sample("year.json"), top=120, holiday_profile="public-worker")
 
     assert result["signals"]["holiday_profile"] == "public-worker"
     ids = {item["id"] for item in result["results"]}
@@ -83,7 +83,7 @@ def test_standard_holiday_profile_includes_orthodox_regions():
 
 
 def test_public_worker_holiday_profile_adds_china_and_russia_references():
-    result = detect(load_sample("year.json"), top=80, holiday_profile="public-worker")
+    result = detect(load_sample("year.json"), top=120, holiday_profile="public-worker")
 
     ids = {item["id"] for item in result["results"]}
     assert "CN-PUBLIC-WORKER" in ids
@@ -218,7 +218,7 @@ def test_chile_indigenous_peoples_day_uses_winter_solstice_date():
 
 
 def test_public_worker_holiday_profile_adds_south_american_references():
-    result = detect(load_sample("year.json"), top=80, holiday_profile="public-worker")
+    result = detect(load_sample("year.json"), top=120, holiday_profile="public-worker")
 
     ids = {item["id"] for item in result["results"]}
     assert {
@@ -395,3 +395,35 @@ def test_west_african_profiles_include_shared_eid_windows():
         "2026-05-29",
         "2026-05-30",
     }
+
+
+def test_standard_holiday_profile_includes_expanded_north_america_regions():
+    candidates = _candidate_holidays(2026)
+
+    assert {"US", "CA", "MX", "CR", "GT", "PA", "CU", "DO"} <= set(candidates)
+    assert any(
+        holiday.day.isoformat() == "2026-09-15" and holiday.name == "Independence Day"
+        for holiday in candidates["CR"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-11-03" and holiday.name == "Separation Day"
+        for holiday in candidates["PA"][2]
+    )
+
+
+def test_standard_holiday_profile_includes_expanded_europe_regions():
+    candidates = _candidate_holidays(2026)
+
+    assert {"IS", "LU", "EE", "LV", "LT", "HR", "SI", "BA"} <= set(candidates)
+    assert any(
+        holiday.day.isoformat() == "2026-06-17" and holiday.name == "National Day"
+        for holiday in candidates["IS"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-02-24" and holiday.name == "Independence Day"
+        for holiday in candidates["EE"][2]
+    )
+    assert any(
+        holiday.day.isoformat() == "2026-11-18" and holiday.name == "Remembrance Day"
+        for holiday in candidates["HR"][2]
+    )

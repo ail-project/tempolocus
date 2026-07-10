@@ -197,7 +197,7 @@ print(activity["activity_type"], activity["score"])
 | --- | --- | --- |
 | `weekly` | `list[dict]` with `day`, `hour`, and `count` | `day` is `0` through `6`; `hour` is `0` through `23`; buckets are interpreted as UTC. |
 | `yearly` | `dict` with `year`, `max`, and `nb` | `nb` is a list of `[YYYY-MM-DD, count]` pairs. Missing days inside the observed range are filled as zero activity. |
-| `timestamps` | `list[str | int | float]` | Strings are parsed as UTC timestamps; numbers are Unix epoch seconds in UTC. |
+| `timestamps` | `list[str \| int \| float]` | Strings are parsed as UTC timestamps; numbers are Unix epoch seconds in UTC. |
 
 Invalid inputs raise `tempolocus.core.DetectionError`, a subclass of
 `ValueError`. Catch it around user-supplied data if you need to return a custom

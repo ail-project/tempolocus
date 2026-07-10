@@ -38,18 +38,19 @@ classification of `work-time`, `vacation-time`, or `mixed-time`. Weekly inputs
 rank timezone offsets, representative IANA zones, and a `probable_countries`
 list that highlights countries whose multiple timezones appear in the top
 timezone-offset results. Yearly inputs rank broad regions by comparing
-activity on public-holiday calendars, including Orthodox calendar references for
-countries such as Bulgaria, Greece, Romania, Russia, Serbia, and Ukraine; expanded
-European references for the Baltics, Balkans, Iceland, and Luxembourg; North
-American calendars for Canada, Costa Rica, Cuba, the Dominican Republic,
-Guatemala, Mexico, Panama, and the United States; Asia-Pacific calendars for
-Australia, China, India, Japan, Malaysia, New Zealand, North Korea, the
-Philippines, Singapore, South Korea, Thailand, and Vietnam; South American
-calendars for Argentina, Brazil, Chile, Colombia, Peru, and Uruguay; African
-calendars for Côte d'Ivoire, Ethiopia, Ghana, Kenya, Nigeria, Senegal, and
-South Africa; plus Arabic-region and Israel vacation references for Algeria,
-Bahrain, Egypt, Israel, Jordan, Kuwait, Lebanon, Morocco, Oman, Qatar, Saudi
-Arabia, Tunisia, and the United Arab Emirates.
+activity on public-holiday calendars.
+
+### Supported yearly holiday regions
+
+| Area | Supported regions |
+| --- | --- |
+| 🌍 Africa | 🇩🇿 Algeria, 🇨🇮 Côte d'Ivoire, 🇪🇬 Egypt, 🇪🇹 Ethiopia, 🇬🇭 Ghana, 🇰🇪 Kenya, 🇲🇦 Morocco, 🇳🇬 Nigeria, 🇸🇳 Senegal, 🇿🇦 South Africa, 🇹🇳 Tunisia |
+| 🌏 Asia-Pacific | 🇦🇺 Australia, 🇨🇳 China, 🇮🇳 India, 🇯🇵 Japan, 🇲🇾 Malaysia, 🇳🇿 New Zealand, 🇰🇵 North Korea, 🇵🇭 Philippines, 🇸🇬 Singapore, 🇰🇷 South Korea, 🇹🇭 Thailand, 🇻🇳 Vietnam |
+| 🇪🇺 Europe | 🇦🇹 Austria, 🇧🇪 Belgium, 🇧🇦 Bosnia and Herzegovina, 🇧🇬 Bulgaria, 🇭🇷 Croatia, 🇨🇿 Czechia, 🇩🇰 Denmark, 🇪🇪 Estonia, 🇫🇮 Finland, 🇫🇷 France, 🇩🇪 Germany, 🇬🇷 Greece, 🇭🇺 Hungary, 🇮🇸 Iceland, 🇮🇪 Ireland, 🇮🇹 Italy, 🇱🇻 Latvia, 🇱🇹 Lithuania, 🇱🇺 Luxembourg, 🇳🇱 Netherlands, 🇳🇴 Norway, 🇵🇱 Poland, 🇵🇹 Portugal, 🇷🇴 Romania, 🇷🇺 Russia, 🇷🇸 Serbia, 🇸🇰 Slovakia, 🇸🇮 Slovenia, 🇪🇸 Spain, 🇸🇪 Sweden, 🇨🇭 Switzerland, 🇺🇦 Ukraine, 🇬🇧 United Kingdom |
+| 🌎 North America & Caribbean | 🇨🇦 Canada, 🇨🇷 Costa Rica, 🇨🇺 Cuba, 🇩🇴 Dominican Republic, 🇬🇹 Guatemala, 🇲🇽 Mexico, 🇵🇦 Panama, 🇺🇸 United States |
+| 🕌 Middle East | 🇧🇭 Bahrain, 🇮🇱 Israel, 🇯🇴 Jordan, 🇰🇼 Kuwait, 🇱🇧 Lebanon, 🇴🇲 Oman, 🇶🇦 Qatar, 🇸🇦 Saudi Arabia, 🇦🇪 United Arab Emirates |
+| 🌎 South America | 🇦🇷 Argentina, 🇧🇷 Brazil, 🇨🇱 Chile, 🇨🇴 Colombia, 🇵🇪 Peru, 🇺🇾 Uruguay |
+
 Yearly analysis treats a lack of activity on holidays as the default signal;
 pass `--activity-signal peak` when unusually high activity is the indicator you
 want to match instead. Yearly analysis defaults to standard public holidays;

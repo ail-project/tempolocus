@@ -69,6 +69,150 @@ why the activity occurred.
 This is a heuristic first pass. Weekly data cannot uniquely identify an IANA
 timezone without dates, and yearly data is sensitive to the meaning of the
 activity counter.
+
+## Using tempolocus as a Python library
+
+Install `tempolocus` in the Python environment that will import it:
+
+```bash
+python -m pip install tempolocus
+```
+
+For development against a local checkout, install it in editable mode instead:
+
+```bash
+python -m pip install -e .
+```
+
+The public package entry points are `detect`, `analyze_activity`, and
+`load_json`:
+
+```python
+from tempolocus import analyze_activity, detect, load_json
+
+data = load_json("samples/weekfull-chan1.json")
+result = detect(data, top=10)
+
+print(result["input_type"])
+print(result["results"][0]["label"])
+print(result["analysis"]["activity_type"])
+
+activity = analyze_activity(data)
+print(activity["activity_type"])
+```
+
+### `detect(data, kind="auto", top=5, holiday_profile="standard", activity_signal="lack")`
+
+Use `detect` when you want the full inference result. It accepts already-loaded
+Python data structures rather than file paths, which makes it suitable for web
+services, notebooks, pipelines, and tests. The return value is a dictionary with
+metadata, assumptions, signal summaries, and ranked `results`.
+
+Parameters:
+
+- `data`: one of the supported input shapes described below.
+- `kind`: `"auto"`, `"weekly"`, `"yearly"`, or `"timestamps"`. Use `"auto"`
+  when the input shape is unambiguous; force a kind when your caller already
+  knows what it provided.
+- `top`: number of ranked candidates to include. Must be at least `1`.
+- `holiday_profile`: for yearly inputs, `"standard"` or `"public-worker"`. The
+  public-worker profile adds public-sector closure references where available.
+- `activity_signal`: for yearly inputs, `"lack"` to match low activity on
+  holidays or `"peak"` to match unusually high activity on holidays.
+
+Weekly hourly bucket example:
+
+```python
+from tempolocus import detect
+
+weekly_rows = [
+    {"day": day, "hour": hour, "count": 10 if day <= 4 and 9 <= hour <= 17 else 1}
+    for day in range(7)
+    for hour in range(24)
+]
+
+result = detect(weekly_rows, kind="weekly", top=3)
+for candidate in result["results"]:
+    print(candidate["probability"], candidate["id"], candidate["label"])
+```
+
+Timestamp list example:
+
+```python
+from tempolocus import detect
+
+timestamps = [
+    "2026-01-05T09:15:00Z",
+    "2026-01-06 10:30:00 UTC",
+    1767605400,  # Unix epoch seconds in UTC
+]
+
+result = detect(timestamps, kind="timestamps")
+print(result["signals"]["timestamps_seen"])
+```
+
+Yearly daily bucket example:
+
+```python
+from tempolocus import detect
+
+yearly = {
+    "year": 2026,
+    "max": 42,
+    "nb": [
+        ["2026-01-01", 0],
+        ["2026-01-02", 18],
+        ["2026-01-03", 21],
+    ],
+}
+
+result = detect(
+    yearly,
+    kind="yearly",
+    top=5,
+    holiday_profile="public-worker",
+    activity_signal="lack",
+)
+print(result["results"][0]["id"], result["results"][0]["label"])
+```
+
+### `analyze_activity(data, kind="auto")`
+
+Use `analyze_activity` when you only need the generic activity classification
+without timezone or holiday-region rankings. It returns fields such as
+`activity_type`, `score`, and `shares`. Weekly inputs are classified from local
+business-hours versus weekend/off-hours activity; yearly inputs compare weekday
+and weekend activity.
+
+```python
+from tempolocus import analyze_activity, load_json
+
+activity = analyze_activity(load_json("samples/year.json"), kind="yearly")
+print(activity["activity_type"], activity["score"])
+```
+
+### Input shape reference
+
+| Kind | Python shape | Notes |
+| --- | --- | --- |
+| `weekly` | `list[dict]` with `day`, `hour`, and `count` | `day` is `0` through `6`; `hour` is `0` through `23`; buckets are interpreted as UTC. |
+| `yearly` | `dict` with `year`, `max`, and `nb` | `nb` is a list of `[YYYY-MM-DD, count]` pairs. Missing days inside the observed range are filled as zero activity. |
+| `timestamps` | `list[str | int | float]` | Strings are parsed as UTC timestamps; numbers are Unix epoch seconds in UTC. |
+
+Invalid inputs raise `tempolocus.core.DetectionError`, a subclass of
+`ValueError`. Catch it around user-supplied data if you need to return a custom
+error response:
+
+```python
+from tempolocus import detect
+from tempolocus.core import DetectionError
+
+try:
+    result = detect(user_supplied_data)
+except DetectionError as error:
+    result = {"error": str(error)}
+```
+
 ## Example 
 
 ~~~

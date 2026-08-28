@@ -2,6 +2,9 @@
 
 tempolocus looks at time-series activity patterns to infer a location.
 
+<img width="1297" height="937" alt="Tempolocus used in AIL Project" src="https://github.com/user-attachments/assets/942d1a3a-768d-491f-aa0a-ab39421a13a0" />
+
+
 ## Using tempolocus 
 
 `tempolocus` accepts two JSON shapes plus timestamp-list imports:

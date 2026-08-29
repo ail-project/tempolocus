@@ -64,6 +64,15 @@ China and Russia references for government and public-sector closure patterns,
 and South American public-servant references with common administrative bridge
 or year-end closure days.
 
+The calendars include recent statutory changes such as Ireland's Saint Brigid's
+Day, Poland's Christmas Eve holiday, Italy's Saint Francis of Assisi Day from
+2026, and Ukraine's revised holiday dates. Published New Zealand Matariki dates
+are covered through 2052, while the explicit East Asian lunar reference tables
+currently cover Chinese New Year and Chuseok through 2035. Islamic dates are
+calendar estimates and can differ by a day from an official local moon-sighting
+announcement; regional and one-off government closure announcements should
+therefore be treated as reference signals rather than payroll calendars.
+
 The generic activity analysis compares weekly business-hours against
 weekend/off-hours activity, or yearly weekday activity against weekend activity.
 It is intended as a broad activity-label heuristic rather than a declaration of

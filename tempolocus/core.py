@@ -1196,7 +1196,7 @@ def _uk_holidays(year: int, easter: date) -> list[Holiday]:
 
 
 def _ireland_holidays(year: int, easter: date) -> list[Holiday]:
-    return [
+    holidays = [
         _fixed(year, 1, 1, "New Year's Day"),
         _fixed(year, 3, 17, "Saint Patrick's Day"),
         _relative(easter, 1, "Easter Monday"),
@@ -1207,6 +1207,18 @@ def _ireland_holidays(year: int, easter: date) -> list[Holiday]:
         _fixed(year, 12, 25, "Christmas Day"),
         _fixed(year, 12, 26, "Saint Stephen's Day"),
     ]
+    # Ireland introduced the Saint Brigid's Day public holiday in 2023.  It is
+    # observed on 1 February when that is a Friday, otherwise on the first
+    # Monday in February.
+    if year >= 2023:
+        february_first = date(year, 2, 1)
+        brigid_day = (
+            february_first
+            if february_first.weekday() == 4
+            else _nth_weekday(year, 2, 0, 1, "Saint Brigid's Day").day
+        )
+        holidays.append(Holiday(brigid_day, "Saint Brigid's Day"))
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
 
 
 def _france_holidays(year: int, easter: date) -> list[Holiday]:
@@ -1240,7 +1252,7 @@ def _germany_holidays(year: int, easter: date) -> list[Holiday]:
 
 
 def _italy_holidays(year: int, easter: date) -> list[Holiday]:
-    return [
+    holidays = [
         _fixed(year, 1, 1, "New Year's Day"),
         _fixed(year, 1, 6, "Epiphany"),
         _relative(easter, 1, "Easter Monday"),
@@ -1253,6 +1265,10 @@ def _italy_holidays(year: int, easter: date) -> list[Holiday]:
         _fixed(year, 12, 25, "Christmas Day"),
         _fixed(year, 12, 26, "Saint Stephen's Day"),
     ]
+    # The restored national feast of Saint Francis takes effect in 2026.
+    if year >= 2026:
+        holidays.append(_fixed(year, 10, 4, "Saint Francis of Assisi Day"))
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
 
 
 def _spain_holidays(year: int, easter: date) -> list[Holiday]:
@@ -1347,7 +1363,7 @@ def _austria_holidays(year: int, easter: date) -> list[Holiday]:
 
 
 def _poland_holidays(year: int, easter: date) -> list[Holiday]:
-    return [
+    holidays = [
         _fixed(year, 1, 1, "New Year's Day"),
         _fixed(year, 1, 6, "Epiphany"),
         _relative(easter, 1, "Easter Monday"),
@@ -1360,6 +1376,9 @@ def _poland_holidays(year: int, easter: date) -> list[Holiday]:
         _fixed(year, 12, 25, "Christmas Day"),
         _fixed(year, 12, 26, "Second Day of Christmas"),
     ]
+    if year >= 2025:
+        holidays.append(_fixed(year, 12, 24, "Christmas Eve"))
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
 
 
 def _czechia_holidays(year: int, easter: date) -> list[Holiday]:
@@ -1484,19 +1503,28 @@ def _serbia_holidays(year: int, orthodox_easter: date) -> list[Holiday]:
 
 
 def _ukraine_holidays(year: int, orthodox_easter: date) -> list[Holiday]:
-    return [
+    holidays = [
         _fixed(year, 1, 1, "New Year's Day"),
-        _fixed(year, 1, 7, "Orthodox Christmas Day"),
         _fixed(year, 3, 8, "International Women's Day"),
         Holiday(orthodox_easter, "Orthodox Easter Sunday"),
         _relative(orthodox_easter, 49, "Orthodox Pentecost"),
         _fixed(year, 5, 1, "Labour Day"),
-        _fixed(year, 5, 8, "Day of Remembrance and Victory"),
         _fixed(year, 6, 28, "Constitution Day"),
         _fixed(year, 8, 24, "Independence Day"),
-        _fixed(year, 10, 14, "Defenders Day"),
         _fixed(year, 12, 25, "Christmas Day"),
     ]
+    if year < 2023:
+        holidays.append(_fixed(year, 1, 7, "Orthodox Christmas Day"))
+        holidays.append(_fixed(year, 10, 14, "Defenders Day"))
+        holidays.append(_fixed(year, 5, 9, "Victory Day"))
+    else:
+        holidays.append(_fixed(year, 5, 8, "Day of Remembrance and Victory"))
+        holidays.append(_fixed(year, 10, 1, "Defenders Day"))
+    if year in (2022, 2023):
+        holidays.append(_fixed(year, 7, 28, "Ukrainian Statehood Day"))
+    elif year >= 2024:
+        holidays.append(_fixed(year, 7, 15, "Ukrainian Statehood Day"))
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
 
 
 def _russia_holidays(year: int, orthodox_easter: date) -> list[Holiday]:
@@ -1919,6 +1947,11 @@ def _chinese_new_year(year: int) -> date | None:
         2028: (1, 26),
         2029: (2, 13),
         2030: (2, 3),
+        2031: (1, 23),
+        2032: (2, 11),
+        2033: (1, 31),
+        2034: (2, 19),
+        2035: (2, 8),
     }
     if year not in dates:
         return None
@@ -1941,6 +1974,11 @@ def _korean_chuseok(year: int) -> date | None:
         2028: (10, 3),
         2029: (9, 22),
         2030: (9, 12),
+        2031: (10, 1),
+        2032: (9, 19),
+        2033: (9, 8),
+        2034: (9, 27),
+        2035: (9, 16),
     }
     if year not in dates:
         return None
@@ -2178,7 +2216,7 @@ def _australia_holidays(year: int, easter: date) -> list[Holiday]:
 
 
 def _new_zealand_holidays(year: int, easter: date) -> list[Holiday]:
-    return [
+    holidays = [
         _fixed(year, 1, 1, "New Year's Day"),
         _fixed(year, 1, 2, "Day after New Year's Day"),
         _fixed(year, 2, 6, "Waitangi Day"),
@@ -2190,6 +2228,21 @@ def _new_zealand_holidays(year: int, easter: date) -> list[Holiday]:
         _fixed(year, 12, 25, "Christmas Day"),
         _fixed(year, 12, 26, "Boxing Day"),
     ]
+    # Legislated Matariki dates are deliberately explicit: the public holiday
+    # follows the maramataka rather than a Gregorian weekday formula.
+    matariki_dates = {
+        2022: (6, 24), 2023: (7, 14), 2024: (6, 28), 2025: (6, 20),
+        2026: (7, 10), 2027: (6, 25), 2028: (7, 14), 2029: (7, 6),
+        2030: (6, 21), 2031: (7, 11), 2032: (7, 2), 2033: (6, 24),
+        2034: (7, 7), 2035: (6, 29), 2036: (7, 18), 2037: (7, 10),
+        2038: (6, 25), 2039: (7, 15), 2040: (7, 6), 2041: (7, 19),
+        2042: (7, 11), 2043: (7, 3), 2044: (6, 24), 2045: (7, 7),
+        2046: (6, 29), 2047: (7, 19), 2048: (7, 3), 2049: (6, 25),
+        2050: (7, 15), 2051: (6, 30), 2052: (6, 21),
+    }
+    if matariki := matariki_dates.get(year):
+        holidays.append(_fixed(year, *matariki, "Matariki"))
+    return sorted(holidays, key=lambda holiday: (holiday.day, holiday.name))
 
 
 def _gregorian_from_jdn(jdn: int) -> date:

@@ -429,6 +429,47 @@ def test_standard_holiday_profile_includes_expanded_europe_regions():
     )
 
 
+def test_recent_european_public_holiday_changes_are_date_aware():
+    candidates = _candidate_holidays(2026)
+
+    assert ("2026-02-02", "Saint Brigid's Day") in {
+        (holiday.day.isoformat(), holiday.name) for holiday in candidates["IE"][2]
+    }
+    assert ("2026-10-04", "Saint Francis of Assisi Day") in {
+        (holiday.day.isoformat(), holiday.name) for holiday in candidates["IT"][2]
+    }
+    assert ("2026-12-24", "Christmas Eve") in {
+        (holiday.day.isoformat(), holiday.name) for holiday in candidates["PL"][2]
+    }
+    ukraine = {
+        (holiday.day.isoformat(), holiday.name) for holiday in candidates["UA"][2]
+    }
+    assert ("2026-10-01", "Defenders Day") in ukraine
+    assert not any(day == "2026-01-07" for day, _name in ukraine)
+
+
+def test_new_zealand_matariki_period_uses_published_dates():
+    assert ("2026-07-10", "Matariki") in {
+        (holiday.day.isoformat(), holiday.name)
+        for holiday in _candidate_holidays(2026)["NZ"][2]
+    }
+    assert ("2052-06-21", "Matariki") in {
+        (holiday.day.isoformat(), holiday.name)
+        for holiday in _candidate_holidays(2052)["NZ"][2]
+    }
+
+
+def test_lunar_holiday_reference_periods_extend_through_2035():
+    candidates = _candidate_holidays(2035)
+
+    assert ("2035-02-08", "Chinese New Year") in {
+        (holiday.day.isoformat(), holiday.name) for holiday in candidates["SG"][2]
+    }
+    assert ("2035-09-16", "Chuseok") in {
+        (holiday.day.isoformat(), holiday.name) for holiday in candidates["KR"][2]
+    }
+
+
 def test_json_timestamp_list_is_detected_and_aggregated_as_weekly_activity():
     data = [
         "2026-01-05T09:15:00Z",

@@ -32,6 +32,7 @@ tempolocus samples/year-chan1.json --top 10
 tempolocus samples/year.json --holiday-profile public-worker --format text
 tempolocus samples/year.json --activity-signal peak --format text
 tempolocus timestamps.txt --kind timestamps --format text
+tempolocus timestamps.txt --start-date 2026-01-01 --end-date 2026-03-31
 ```
 
 Timestamp strings may use ISO-8601 forms such as `2026-01-05T09:15:00Z`
@@ -42,6 +43,11 @@ rank timezone offsets, representative IANA zones, and a `probable_countries`
 list that highlights countries whose multiple timezones appear in the top
 timezone-offset results. Yearly inputs rank broad regions by comparing
 activity on public-holiday calendars.
+
+Large timestamp or yearly inputs can be restricted before analysis with the
+inclusive `--start-date YYYY-MM-DD` and `--end-date YYYY-MM-DD` options. Either
+boundary may be omitted. Date filtering is unavailable for weekly buckets,
+because that input shape contains weekdays and hours but no calendar dates.
 
 ### Supported yearly holiday regions
 
@@ -113,7 +119,7 @@ activity = analyze_activity(data)
 print(activity["activity_type"])
 ```
 
-### `detect(data, kind="auto", top=5, holiday_profile="standard", activity_signal="lack")`
+### `detect(data, kind="auto", top=5, holiday_profile="standard", activity_signal="lack", start_date=None, end_date=None)`
 
 Use `detect` when you want the full inference result. It accepts already-loaded
 Python data structures rather than file paths, which makes it suitable for web
@@ -131,6 +137,9 @@ Parameters:
   public-worker profile adds public-sector closure references where available.
 - `activity_signal`: for yearly inputs, `"lack"` to match low activity on
   holidays or `"peak"` to match unusually high activity on holidays.
+- `start_date` and `end_date`: optional inclusive `YYYY-MM-DD` strings (or
+  `datetime.date` values) used to pre-filter timestamp and yearly inputs before
+  inference. Weekly buckets cannot be date-filtered because they carry no date.
 
 Weekly hourly bucket example:
 
@@ -159,7 +168,12 @@ timestamps = [
     1767605400,  # Unix epoch seconds in UTC
 ]
 
-result = detect(timestamps, kind="timestamps")
+result = detect(
+    timestamps,
+    kind="timestamps",
+    start_date="2026-01-01",
+    end_date="2026-03-31",
+)
 print(result["signals"]["timestamps_seen"])
 ```
 
@@ -188,13 +202,14 @@ result = detect(
 print(result["results"][0]["id"], result["results"][0]["label"])
 ```
 
-### `analyze_activity(data, kind="auto")`
+### `analyze_activity(data, kind="auto", start_date=None, end_date=None)`
 
 Use `analyze_activity` when you only need the generic activity classification
 without timezone or holiday-region rankings. It returns fields such as
 `activity_type`, `score`, and `shares`. Weekly inputs are classified from local
 business-hours versus weekend/off-hours activity; yearly inputs compare weekday
-and weekend activity.
+and weekend activity. Its optional date boundaries have the same inclusive
+semantics as `detect`.
 
 ```python
 from tempolocus import analyze_activity, load_json

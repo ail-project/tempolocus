@@ -47,6 +47,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Yearly activity signal to match against holidays. Defaults to lack of activity; use peak for high-activity holiday indicators.",
     )
     parser.add_argument(
+        "--start-date",
+        "--start",
+        dest="start_date",
+        metavar="YYYY-MM-DD",
+        help="Include only activity on or after this date (inclusive).",
+    )
+    parser.add_argument(
+        "--end-date",
+        "--end",
+        dest="end_date",
+        metavar="YYYY-MM-DD",
+        help="Include only activity on or before this date (inclusive).",
+    )
+    parser.add_argument(
         "--format",
         choices=("json", "text"),
         default="json",
@@ -95,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
             top=args.top,
             holiday_profile=args.holiday_profile,
             activity_signal=args.activity_signal,
+            start_date=args.start_date,
+            end_date=args.end_date,
         )
     except (OSError, json.JSONDecodeError, DetectionError) as exc:
         print(f"tempolocus: {exc}", file=sys.stderr)

@@ -1,8 +1,11 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from tempolocus import detect
-from tempolocus.core import _candidate_holidays
+from tempolocus.cli import main
+from tempolocus.core import DetectionError, _candidate_holidays
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -491,3 +494,81 @@ def test_timestamp_list_can_be_forced():
 
     assert result["input_type"] == "timestamp_list"
     assert len(result["results"]) == 1
+
+
+def test_timestamp_period_filter_is_applied_before_aggregation():
+    data = [
+        "2025-12-31T23:00:00Z",
+        "2026-01-01T09:00:00Z",
+        "2026-01-02T10:00:00Z",
+        "2026-01-03T11:00:00Z",
+    ]
+
+    result = detect(
+        data,
+        kind="timestamps",
+        start_date="2026-01-01",
+        end_date="2026-01-02",
+    )
+
+    assert result["signals"]["timestamps_before_filter"] == 4
+    assert result["signals"]["timestamps_seen"] == 2
+    assert result["signals"]["period_filter"] == {
+        "start": "2026-01-01",
+        "end": "2026-01-02",
+    }
+
+
+def test_yearly_period_filter_limits_days_used_by_analysis():
+    result = detect(
+        load_sample("year.json"),
+        kind="yearly",
+        start_date="2026-06-01",
+        end_date="2026-06-30",
+    )
+
+    assert result["signals"]["date_range"] == {
+        "start": "2026-06-01",
+        "end": "2026-06-30",
+    }
+    assert result["signals"]["days_evaluated"] == 30
+    assert result["signals"]["days_seen"] < result["signals"]["days_before_filter"]
+
+
+def test_period_filter_rejects_invalid_or_empty_ranges():
+    with pytest.raises(DetectionError, match="start_date must be on or before"):
+        detect(
+            ["2026-01-01T09:00:00Z"],
+            start_date="2026-02-01",
+            end_date="2026-01-01",
+        )
+
+    with pytest.raises(DetectionError, match="selected period"):
+        detect(["2026-01-01T09:00:00Z"], start_date="2027-01-01")
+
+
+def test_weekly_input_rejects_date_filtering():
+    with pytest.raises(DetectionError, match="weekly input because it has no dates"):
+        detect(load_sample("weekfull-chan1.json"), start_date="2026-01-01")
+
+
+def test_cli_accepts_period_filter(tmp_path, capsys):
+    input_path = tmp_path / "timestamps.json"
+    input_path.write_text(
+        json.dumps(["2025-12-31T09:00:00Z", "2026-01-01T10:00:00Z"]),
+        encoding="utf-8",
+    )
+
+    exit_code = main(
+        [
+            str(input_path),
+            "--start-date",
+            "2026-01-01",
+            "--end-date",
+            "2026-01-01",
+        ]
+    )
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["signals"]["timestamps_seen"] == 1

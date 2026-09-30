@@ -238,21 +238,32 @@ def detect(
     top: int = 5,
     holiday_profile: str = "standard",
     activity_signal: str = "lack",
+    start_date: str | date | None = None,
+    end_date: str | date | None = None,
 ) -> dict[str, Any]:
     if top < 1:
         raise DetectionError("top must be >= 1")
 
+    period = _parse_period(start_date, end_date)
     detected = _detect_kind(data) if kind == "auto" else kind
     if detected == "weekly":
+        if period != (None, None):
+            raise DetectionError(
+                "date filtering is not available for weekly input because it has no dates"
+            )
         return infer_weekly(data, top=top)
     if detected == "timestamps":
-        return infer_timestamps(data, top=top)
+        return infer_timestamps(
+            data, top=top, start_date=period[0], end_date=period[1]
+        )
     if detected == "yearly":
         return infer_yearly(
             data,
             top=top,
             holiday_profile=holiday_profile,
             activity_signal=activity_signal,
+            start_date=period[0],
+            end_date=period[1],
         )
     raise DetectionError(f"unsupported input kind: {detected}")
 
@@ -356,14 +367,30 @@ def infer_weekly(data: Any, top: int = 5) -> dict[str, Any]:
     }
 
 
-def infer_timestamps(data: Any, top: int = 5) -> dict[str, Any]:
+def infer_timestamps(
+    data: Any,
+    top: int = 5,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> dict[str, Any]:
     """Infer timezone candidates from a list of UTC timestamps.
 
     Timestamps are normalized into weekly UTC day/hour buckets and then passed
     through the same weekly activity inference used by the structured JSON
     format.
     """
-    rows = _timestamps_to_weekly_rows(_parse_timestamps(data))
+    timestamps = _parse_timestamps(data)
+    timestamps_seen = len(timestamps)
+    timestamps = [
+        stamp
+        for stamp in timestamps
+        if (start_date is None or stamp.date() >= start_date)
+        and (end_date is None or stamp.date() <= end_date)
+    ]
+    if not timestamps:
+        suffix = " in the selected period" if start_date or end_date else ""
+        raise DetectionError(f"timestamp input has no activity{suffix}")
+    rows = _timestamps_to_weekly_rows(timestamps)
     result = infer_weekly(
         [{"day": day, "hour": hour, "count": count} for day, hour, count in rows],
         top=top,
@@ -375,13 +402,18 @@ def infer_timestamps(data: Any, top: int = 5) -> dict[str, Any]:
         *result["assumptions"],
     ]
     result["signals"]["timestamps_seen"] = int(sum(count for _, _, count in rows))
+    result["signals"]["timestamps_before_filter"] = timestamps_seen
+    _add_period_signal(result, start_date, end_date)
     return result
+
 
 def infer_yearly(
     data: Any,
     top: int = 5,
     holiday_profile: str = "standard",
     activity_signal: str = "lack",
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> dict[str, Any]:
     if holiday_profile not in {"standard", "public-worker"}:
         raise DetectionError("holiday_profile must be standard or public-worker")
@@ -389,8 +421,16 @@ def infer_yearly(
         raise DetectionError("activity_signal must be lack or peak")
 
     observed = _parse_yearly_rows(data)
+    days_before_filter = len(observed)
+    observed = {
+        day: count
+        for day, count in observed.items()
+        if (start_date is None or day >= start_date)
+        and (end_date is None or day <= end_date)
+    }
     if not observed:
-        raise DetectionError("yearly input has no activity")
+        suffix = " in the selected period" if start_date or end_date else ""
+        raise DetectionError(f"yearly input has no activity{suffix}")
 
     first_day = min(observed)
     last_day = max(observed)
@@ -459,7 +499,7 @@ def infer_yearly(
     _attach_probabilities(candidates, temperature=7.0)
     candidates.sort(key=lambda item: item["probability"], reverse=True)
     activity_analysis = analyze_yearly_activity(full_series)
-    return {
+    result = {
         "input_type": "yearly_daily_activity",
         "confidence": _distribution_confidence(candidates),
         "analysis": activity_analysis,
@@ -480,6 +520,7 @@ def infer_yearly(
         "signals": {
             "date_range": {"start": first_day.isoformat(), "end": last_day.isoformat()},
             "days_seen": len(observed),
+            "days_before_filter": days_before_filter,
             "days_evaluated": len(full_series),
             "median_daily_activity": baseline,
             "max_daily_activity": max(counts),
@@ -488,25 +529,88 @@ def infer_yearly(
         },
         "results": candidates[:top],
     }
+    _add_period_signal(result, start_date, end_date)
+    return result
 
 
-def analyze_activity(data: Any, kind: str = "auto") -> dict[str, Any]:
+def analyze_activity(
+    data: Any,
+    kind: str = "auto",
+    start_date: str | date | None = None,
+    end_date: str | date | None = None,
+) -> dict[str, Any]:
     """Classify temporal activity as work-time, vacation-time, or mixed-time."""
+    start, end = _parse_period(start_date, end_date)
     detected = _detect_kind(data) if kind == "auto" else kind
     if detected == "weekly":
+        if (start, end) != (None, None):
+            raise DetectionError(
+                "date filtering is not available for weekly input because it has no dates"
+            )
         return analyze_weekly_activity(_parse_weekly_rows(data))
     if detected == "timestamps":
+        timestamps = [
+            stamp
+            for stamp in _parse_timestamps(data)
+            if (start is None or stamp.date() >= start)
+            and (end is None or stamp.date() <= end)
+        ]
+        if not timestamps:
+            suffix = " in the selected period" if start or end else ""
+            raise DetectionError(f"timestamp input has no activity{suffix}")
         return analyze_weekly_activity(
-            _timestamps_to_weekly_rows(_parse_timestamps(data))
+            _timestamps_to_weekly_rows(timestamps)
         )
     if detected == "yearly":
         observed = _parse_yearly_rows(data)
+        observed = {
+            day: count
+            for day, count in observed.items()
+            if (start is None or day >= start) and (end is None or day <= end)
+        }
         if not observed:
-            raise DetectionError("yearly input has no activity")
+            suffix = " in the selected period" if start or end else ""
+            raise DetectionError(f"yearly input has no activity{suffix}")
         return analyze_yearly_activity(
             _fill_dates(observed, min(observed), max(observed))
         )
     raise DetectionError(f"unsupported input kind: {detected}")
+
+
+def _parse_period(
+    start_date: str | date | None, end_date: str | date | None
+) -> tuple[date | None, date | None]:
+    """Validate optional inclusive ISO-8601 date boundaries."""
+
+    def parse(value: str | date | None, name: str) -> date | None:
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if not isinstance(value, str):
+            raise DetectionError(f"{name} must be an ISO date (YYYY-MM-DD)")
+        try:
+            return date.fromisoformat(value)
+        except ValueError as exc:
+            raise DetectionError(f"{name} must be an ISO date (YYYY-MM-DD)") from exc
+
+    start = parse(start_date, "start_date")
+    end = parse(end_date, "end_date")
+    if start is not None and end is not None and start > end:
+        raise DetectionError("start_date must be on or before end_date")
+    return start, end
+
+
+def _add_period_signal(
+    result: dict[str, Any], start_date: date | None, end_date: date | None
+) -> None:
+    if start_date is not None or end_date is not None:
+        result["signals"]["period_filter"] = {
+            "start": start_date.isoformat() if start_date else None,
+            "end": end_date.isoformat() if end_date else None,
+        }
 
 
 def analyze_weekly_activity(rows: list[tuple[int, int, float]]) -> dict[str, Any]:

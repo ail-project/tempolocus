@@ -504,11 +504,11 @@ def infer_yearly(
         "confidence": _distribution_confidence(candidates),
         "analysis": activity_analysis,
         "assumptions": [
-            "Daily buckets are compared with representative public-holiday calendars.",
+            "Daily buckets are compared with representative public-holiday and religious-observance calendars.",
             (
                 "The public-worker holiday profile adds public-sector closure days where they are distinct from general public holidays."
                 if holiday_profile == "public-worker"
-                else "Only general public holidays are used unless the public-worker holiday profile is requested."
+                else "Public holidays and separately labeled religious references are used; public-sector closure extensions require the public-worker profile."
             ),
             (
                 "Yearly holiday matching treats low-count days as the signal; pass activity_signal='peak' if high-count days are meaningful."
@@ -516,6 +516,7 @@ def infer_yearly(
                 else "Yearly holiday matching treats high-count days as the signal; use activity_signal='lack' for closure or inactivity patterns."
             ),
             "This first implementation ranks broad regions; it is not a legal or forensic geolocation result.",
+            "Iranian lunar holidays are tabular estimates and may differ from official moon-sighting dates. Zoroastrian references describe observance traditions, not nationwide closures or unique locations.",
         ],
         "signals": {
             "date_range": {"start": first_day.isoformat(), "end": last_day.isoformat()},
@@ -1019,6 +1020,9 @@ def _candidate_holidays(
         "SA": ("SA", "Saudi Arabia", _saudi_arabia_holidays(year)),
         "EG": ("EG", "Egypt", _egypt_holidays(year)),
         "IL": ("IL", "Israel", _israel_holidays(year)),
+        "IR": ("IR", "Iran", _merge_holidays(_iran_solar_holidays(year), _iran_shia_holidays(year))),
+        "IR-SOLAR": ("IR-SOLAR", "Iran / Solar Hijri public holidays", _iran_solar_holidays(year)),
+        "IR-SHIA": ("IR-SHIA", "Iran / Shia Islamic observances (estimated)", _iran_shia_holidays(year)),
         "QA": ("QA", "Qatar", _qatar_holidays(year)),
         "KW": ("KW", "Kuwait", _kuwait_holidays(year)),
         "BH": ("BH", "Bahrain", _bahrain_holidays(year)),
@@ -1036,6 +1040,13 @@ def _candidate_holidays(
         "ET": ("ET", "Ethiopia", _ethiopia_holidays(year)),
         "ZA": ("ZA", "South Africa", _south_africa_holidays(year, easter)),
     }
+    for variant in ("Bastani", "Fasli", "Qadimi", "Shahanshahi"):
+        region_id = f"IR-ZOROASTRIAN-{variant.upper()}"
+        candidates[region_id] = (
+            region_id,
+            f"Iran / Zoroastrian {variant} observance reference",
+            _zoroastrian_holidays(year, variant),
+        )
     if include_public_worker:
         candidates.update(_public_worker_holiday_candidates(year, candidates))
     return candidates
@@ -2361,6 +2372,167 @@ def _gregorian_from_jdn(jdn: int) -> date:
     month = m + 3 - 12 * (m // 10)
     year = 100 * b + d - 4800 + (m // 10)
     return date(year, month, day)
+
+
+def _solar_hijri_new_year(gregorian_year: int) -> date | None:
+    """Model 1 Farvardin using Borkowski's Jalali break-year calculation.
+
+    The model covers Solar Hijri years -61 through 3177 (Gregorian starts
+    560 through 3798). Official equinox announcements remain authoritative.
+    See https://www.astro.uni.torun.pl/~kb/Papers/EMP/PersianC-EMP.htm.
+    """
+    solar_year = gregorian_year - 621
+    breaks = (-61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181,
+              1210, 1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178)
+    if not breaks[0] <= solar_year < breaks[-1]:
+        return None
+    solar_leaps = -14
+    previous = breaks[0]
+    for boundary in breaks[1:]:
+        interval = boundary - previous
+        if solar_year < boundary:
+            break
+        solar_leaps += 8 * (interval // 33) + (interval % 33) // 4
+        previous = boundary
+    elapsed = solar_year - previous
+    solar_leaps += 8 * (elapsed // 33) + ((elapsed % 33) + 3) // 4
+    if interval % 33 == 4 and interval - elapsed == 4:
+        solar_leaps += 1
+    gregorian_leaps = (
+        gregorian_year // 4 - ((gregorian_year // 100 + 1) * 3) // 4 - 150
+    )
+    return date(gregorian_year, 3, 20 + solar_leaps - gregorian_leaps)
+
+
+def _iran_solar_holidays(year: int) -> list[Holiday]:
+    """Iran's recurring official Solar Hijri holiday reference set.
+
+    Month/day rules: https://en.wikipedia.org/wiki/Public_holidays_in_Iran.
+    These are modern reference rules, not a reconstruction of past regimes.
+    """
+    holidays = []
+    rules = [
+        (1, day, f"Nowruz day {day}") for day in range(1, 5)
+    ] + [
+        (1, 12, "Islamic Republic Day"),
+        (1, 13, "Nature's Day / Sizdah Bedar"),
+        (3, 14, "Death of Imam Khomeini"),
+        (3, 15, "15 Khordad Uprising"),
+        (11, 22, "Islamic Revolution Day"),
+        (12, 29, "Oil Nationalization Day"),
+    ]
+    # January/February holidays belong to the preceding Solar Hijri year.
+    for start_year in (year - 1, year):
+        start = _solar_hijri_new_year(start_year)
+        if start is None:
+            continue
+        for month, day, name in rules:
+            offset = 31 * (month - 1) if month <= 6 else 186 + 30 * (month - 7)
+            current = start + timedelta(days=offset + day - 1)
+            if current.year == year:
+                if name == "Death of Imam Khomeini" and year < 1989:
+                    continue
+                holidays.append(Holiday(current, name))
+    # Esfand 30 is an additional year-end holiday in a Solar Hijri leap year.
+    start = _solar_hijri_new_year(year - 1)
+    end = _solar_hijri_new_year(year)
+    if start and end and (end - start).days == 366:
+        holidays.append(Holiday(end - timedelta(days=1), "Solar Hijri leap-year end"))
+    return _merge_holidays(holidays)
+
+
+def _iran_shia_holidays(year: int) -> list[Holiday]:
+    """Iranian Shia public observances, using the existing tabular calendar.
+
+    In particular, Iran observes Muhammad's birthday on 17 Rabi al-Awwal,
+    rather than the 12th used by the Arabian reference profiles.
+    """
+    rules = [
+        (1, 9, "Tasua"),
+        (1, 10, "Ashura"),
+        (2, 20, "Arbaeen"),
+        (2, 28, "Death of Prophet Muhammad and Martyrdom of Imam Hasan"),
+        (2, 30, "Martyrdom of Imam Reza"),
+        (3, 8, "Martyrdom of Imam Hasan al-Askari"),
+        (3, 17, "Birthday of Prophet Muhammad and Imam Ja'far al-Sadiq"),
+        (6, 3, "Martyrdom of Fatima"),
+        (7, 13, "Birthday of Imam Ali"),
+        (7, 27, "Prophet's Ascension / Mab'ath"),
+        (8, 15, "Birthday of Imam Mahdi"),
+        (9, 21, "Martyrdom of Imam Ali"),
+        (10, 1, "Eid al-Fitr day 1"),
+        (10, 2, "Eid al-Fitr day 2"),
+        (10, 25, "Martyrdom of Imam Ja'far al-Sadiq"),
+        (12, 10, "Eid al-Adha"),
+        (12, 18, "Eid al-Ghadir"),
+    ]
+    # A 30-year tabular Islamic cycle contains 10631 days. Estimating from
+    # January 1 also captures years with two occurrences of a lunar holiday.
+    epoch = date(622, 7, 19)
+    approximate_year = (date(year, 1, 1) - epoch).days * 30 // 10631 + 1
+    holidays = []
+    for lunar_year in range(max(1, approximate_year - 1), approximate_year + 3):
+        for month, day, name in rules:
+            # Safar can have 29 days in the tabular model. Imam Reza's
+            # commemoration is on its final day, not on 1 Rabi al-Awwal.
+            current = (
+                _islamic_to_gregorian(lunar_year, 3, 1) - timedelta(days=1)
+                if (month, day) == (2, 30)
+                else _islamic_to_gregorian(lunar_year, month, day)
+            )
+            if current.year == year:
+                holidays.append(Holiday(current, f"{name} (estimated)"))
+    return _merge_holidays(holidays)
+
+
+def _zoroastrian_holidays(year: int, variant: str) -> list[Holiday]:
+    """Major Zoroastrian festivals in four explicitly defined conventions.
+
+    Qadimi and Shahanshahi use 365-day years anchored on Nowruz 2000:
+    July 22 and August 21, respectively. Fasli uses March 21; Bastani uses
+    the Iranian Solar Hijri equinox model. All have twelve 30-day months
+    followed by five Gatha days (plus a seasonal leap day when needed).
+    See https://en.wikipedia.org/wiki/Zoroastrian_calendar and
+    https://en.wikipedia.org/wiki/Zoroastrian_festivals.
+    """
+    if variant in {"Bastani", "Fasli"}:
+        starts = [
+            _solar_hijri_new_year(y) if variant == "Bastani" else date(y, 3, 21)
+            for y in (year - 1, year)
+            if y >= 1
+        ]
+    elif variant in {"Qadimi", "Shahanshahi"}:
+        anchor = date(2000, 7, 22) if variant == "Qadimi" else date(2000, 8, 21)
+        cycle = (date(year, 1, 1) - anchor).days // 365
+        starts = [anchor + timedelta(days=365 * i) for i in (cycle, cycle + 1)]
+    else:
+        raise ValueError(f"unknown Zoroastrian calendar: {variant}")
+    # Offsets are zero-based, with 30 days in every named month.
+    festivals = [
+        (0, "Nowruz"),
+        (5, "Khordad Sal / Birth of Zoroaster"),
+        (102, "Tirgan"),
+        (195, "Mehregan"),
+        (280, "Zartosht No-Diso / Death of Zoroaster"),
+    ]
+    for first, name in [
+        (40, "Maidyozarem Gahambar"),
+        (100, "Maidyoshahem Gahambar"),
+        (175, "Paitishahem Gahambar"),
+        (205, "Ayathrem Gahambar"),
+        (285, "Maidyarem Gahambar"),
+        (360, "Hamaspathmaidyem Gahambar / Gatha days"),
+    ]:
+        festivals.extend((first + i, f"{name} day {i + 1}") for i in range(5))
+    holidays = []
+    for start in starts:
+        if start is None:
+            continue
+        for offset, name in festivals:
+            current = start + timedelta(days=offset)
+            if current.year == year:
+                holidays.append(Holiday(current, f"{name} ({variant} reference)"))
+    return _merge_holidays(holidays)
 
 
 def _islamic_to_gregorian(islamic_year: int, month: int, day: int) -> date:

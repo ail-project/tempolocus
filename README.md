@@ -57,12 +57,13 @@ because that input shape contains weekdays and hours but no calendar dates.
 | 🌏 Asia-Pacific | 🇦🇺 Australia, 🇨🇳 China, 🇮🇳 India, 🇯🇵 Japan, 🇲🇾 Malaysia, 🇳🇿 New Zealand, 🇰🇵 North Korea, 🇵🇭 Philippines, 🇸🇬 Singapore, 🇰🇷 South Korea, 🇹🇭 Thailand, 🇻🇳 Vietnam |
 | 🇪🇺 Europe | 🇦🇹 Austria, 🇧🇪 Belgium, 🇧🇦 Bosnia and Herzegovina, 🇧🇬 Bulgaria, 🇭🇷 Croatia, 🇨🇿 Czechia, 🇩🇰 Denmark, 🇪🇪 Estonia, 🇫🇮 Finland, 🇫🇷 France, 🇩🇪 Germany, 🇬🇷 Greece, 🇭🇺 Hungary, 🇮🇸 Iceland, 🇮🇪 Ireland, 🇮🇹 Italy, 🇱🇻 Latvia, 🇱🇹 Lithuania, 🇱🇺 Luxembourg, 🇳🇱 Netherlands, 🇳🇴 Norway, 🇵🇱 Poland, 🇵🇹 Portugal, 🇷🇴 Romania, 🇷🇺 Russia, 🇷🇸 Serbia, 🇸🇰 Slovakia, 🇸🇮 Slovenia, 🇪🇸 Spain, 🇸🇪 Sweden, 🇨🇭 Switzerland, 🇺🇦 Ukraine, 🇬🇧 United Kingdom |
 | 🌎 North America & Caribbean | 🇨🇦 Canada, 🇨🇷 Costa Rica, 🇨🇺 Cuba, 🇩🇴 Dominican Republic, 🇬🇹 Guatemala, 🇲🇽 Mexico, 🇵🇦 Panama, 🇺🇸 United States |
-| 🕌 Middle East | 🇧🇭 Bahrain, 🇮🇱 Israel, 🇯🇴 Jordan, 🇰🇼 Kuwait, 🇱🇧 Lebanon, 🇴🇲 Oman, 🇶🇦 Qatar, 🇸🇦 Saudi Arabia, 🇦🇪 United Arab Emirates |
+| 🕌 Middle East | 🇧🇭 Bahrain, 🇮🇷 Iran, 🇮🇱 Israel, 🇯🇴 Jordan, 🇰🇼 Kuwait, 🇱🇧 Lebanon, 🇴🇲 Oman, 🇶🇦 Qatar, 🇸🇦 Saudi Arabia, 🇦🇪 United Arab Emirates |
 | 🌎 South America | 🇦🇷 Argentina, 🇧🇷 Brazil, 🇨🇱 Chile, 🇨🇴 Colombia, 🇵🇪 Peru, 🇺🇾 Uruguay |
 
 Yearly analysis treats a lack of activity on holidays as the default signal;
 pass `--activity-signal peak` when unusually high activity is the indicator you
-want to match instead. Yearly analysis defaults to standard public holidays;
+want to match instead. Yearly analysis defaults to public holidays and separately
+labeled religious observance references;
 pass `--holiday-profile public-worker` to add public-sector worker references,
 such as state-worker, Golden Week, bridge-day, or administrative closure days,
 alongside standard holidays. The public-worker profile includes additional
@@ -83,6 +84,39 @@ The generic activity analysis compares weekly business-hours against
 weekend/off-hours activity, or yearly weekday activity against weekend activity.
 It is intended as a broad activity-label heuristic rather than a declaration of
 why the activity occurred.
+
+### Iranian calendar references
+
+Both yearly holiday profiles include these candidates automatically. They are
+holiday reference sets for activity inference, rather than general-purpose
+calendar conversion APIs.
+
+| Candidate ID | Reference set |
+| --- | --- |
+| `IR` | Iran's combined recurring Solar Hijri and Shia public holidays |
+| `IR-SOLAR` | Solar Hijri holidays: four Nowruz days, Islamic Republic Day, Sizdah Bedar, Khomeini's death anniversary, 15 Khordad, Revolution Day, Oil Nationalization Day, and leap-year end |
+| `IR-SHIA` | Estimated Islamic lunar dates for Tasua, Ashura, Arbaeen, the Prophet and Imams' commemorations, Fatima's martyrdom, Mab'ath, Mahdi's birthday, two Eid al-Fitr days, Eid al-Adha, and Eid al-Ghadir |
+| `IR-ZOROASTRIAN-BASTANI` | Seasonal Iranian reference, using the Solar Hijri New Year model |
+| `IR-ZOROASTRIAN-FASLI` | Seasonal reference with Nowruz fixed to March 21 |
+| `IR-ZOROASTRIAN-QADIMI` | Traditional 365-day calendar, anchored to Nowruz on July 22, 2000 |
+| `IR-ZOROASTRIAN-SHAHANSHAHI` | Traditional 365-day calendar, anchored to Nowruz on August 21, 2000 |
+
+The Zoroastrian sets cover Nowruz, Khordad Sal, Tirgan, Mehregan,
+Zartosht No-Diso, and the five-day windows of all six Gahambars. These
+observances are religious references, not nationwide public holidays. Related
+traditions also exist outside Iran, so a match does not uniquely identify Iran.
+The labels distinguish the March 21 Fasli convention from the equinox-based
+Bastani convention; local practice can vary.
+
+Solar Hijri dates use [Borkowski's Jalali model](https://www.astro.uni.torun.pl/~kb/Papers/EMP/PersianC-EMP.htm),
+covering Gregorian New Year starts from 560 through 3798. Dates outside that
+model's range are omitted. The Islamic references use a tabular lunar calendar
+and explicitly mark every date as estimated; official Iranian moon-sighting
+dates can differ. The recurring public-holiday rules follow the
+[Iranian holiday calendar](https://en.wikipedia.org/wiki/Public_holidays_in_Iran);
+they do not reconstruct past regimes or include one-off closures. Zoroastrian
+rules follow the [calendar variants](https://en.wikipedia.org/wiki/Zoroastrian_calendar)
+and [festival reference](https://en.wikipedia.org/wiki/Zoroastrian_festivals).
 
 This is a heuristic first pass. Weekly data cannot uniquely identify an IANA
 timezone without dates, and yearly data is sensitive to the meaning of the

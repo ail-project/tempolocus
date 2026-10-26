@@ -60,6 +60,30 @@ because that input shape contains weekdays and hours but no calendar dates.
 | 🕌 Middle East | 🇧🇭 Bahrain, 🇮🇷 Iran, 🇮🇱 Israel, 🇯🇴 Jordan, 🇰🇼 Kuwait, 🇱🇧 Lebanon, 🇴🇲 Oman, 🇶🇦 Qatar, 🇸🇦 Saudi Arabia, 🇦🇪 United Arab Emirates |
 | 🌎 South America | 🇦🇷 Argentina, 🇧🇷 Brazil, 🇨🇱 Chile, 🇨🇴 Colombia, 🇵🇪 Peru, 🇺🇾 Uruguay |
 
+### Additional country references (partial calendars)
+
+The detailed calendars above cover 80 countries. An additional 117 countries
+have **fixed-date reference signals**, bringing yearly country coverage to
+197: the 193 UN members, the Holy See and Palestine, plus Kosovo (`XK`)
+and Taiwan (`TW`). This is a coverage convention, not a statement on sovereignty.
+
+These additional candidates are explicitly labeled `fixed-date references
+(partial)` in JSON and text results. They contain selected national and civic
+anniversaries only. They omit movable religious holidays, observed-day shifts,
+regional holidays and one-off closures, and do not reconstruct historical
+holiday laws. A reference date does not imply every worker has the day off.
+The same partial references are available in both holiday profiles; the
+public-worker profile does not add government closure rules for them.
+
+Afghanistan (`AF`), Albania (`AL`), Andorra (`AD`), Angola (`AO`), Antigua and Barbuda (`AG`), Armenia (`AM`), Azerbaijan (`AZ`), Bahamas (`BS`), Bangladesh (`BD`), Barbados (`BB`), Belarus (`BY`), Belize (`BZ`), Benin (`BJ`), Bhutan (`BT`), Bolivia (`BO`), Botswana (`BW`), Brunei (`BN`), Burkina Faso (`BF`), Burundi (`BI`), Cabo Verde (`CV`), Cambodia (`KH`), Cameroon (`CM`), Central African Republic (`CF`), Chad (`TD`), Comoros (`KM`), Republic of the Congo (`CG`), Democratic Republic of the Congo (`CD`), Cyprus (`CY`), Djibouti (`DJ`), Dominica (`DM`), Ecuador (`EC`), El Salvador (`SV`), Equatorial Guinea (`GQ`), Eritrea (`ER`), Eswatini (`SZ`), Fiji (`FJ`), Gabon (`GA`), Gambia (`GM`), Georgia (`GE`), Grenada (`GD`), Guinea (`GN`), Guinea-Bissau (`GW`), Guyana (`GY`), Haiti (`HT`), Honduras (`HN`), Indonesia (`ID`), Iraq (`IQ`), Jamaica (`JM`), Kazakhstan (`KZ`), Kiribati (`KI`), Kosovo (`XK`), Kyrgyzstan (`KG`), Laos (`LA`), Lesotho (`LS`), Liberia (`LR`), Libya (`LY`), Liechtenstein (`LI`), Madagascar (`MG`), Malawi (`MW`), Maldives (`MV`), Mali (`ML`), Malta (`MT`), Marshall Islands (`MH`), Mauritania (`MR`), Mauritius (`MU`), Micronesia (`FM`), Moldova (`MD`), Monaco (`MC`), Mongolia (`MN`), Montenegro (`ME`), Mozambique (`MZ`), Myanmar (`MM`), Namibia (`NA`), Nauru (`NR`), Nepal (`NP`), Nicaragua (`NI`), Niger (`NE`), North Macedonia (`MK`), Pakistan (`PK`), Palau (`PW`), Palestine (`PS`), Papua New Guinea (`PG`), Paraguay (`PY`), Rwanda (`RW`), Saint Kitts and Nevis (`KN`), Saint Lucia (`LC`), Saint Vincent and the Grenadines (`VC`), Samoa (`WS`), San Marino (`SM`), Sao Tome and Principe (`ST`), Seychelles (`SC`), Sierra Leone (`SL`), Solomon Islands (`SB`), Somalia (`SO`), South Sudan (`SS`), Sri Lanka (`LK`), Sudan (`SD`), Suriname (`SR`), Syria (`SY`), Taiwan (`TW`), Tajikistan (`TJ`), Tanzania (`TZ`), Timor-Leste (`TL`), Togo (`TG`), Tonga (`TO`), Trinidad and Tobago (`TT`), Türkiye (`TR`), Turkmenistan (`TM`), Tuvalu (`TV`), Uganda (`UG`), Uzbekistan (`UZ`), Vanuatu (`VU`), Vatican City (`VA`), Venezuela (`VE`), Yemen (`YE`), Zambia (`ZM`), Zimbabwe (`ZW`).
+
+Reference dates are maintained in `tempolocus/country_references.py`;
+[national days](https://en.wikipedia.org/wiki/National_day) provide a starting
+point for checking national anniversaries. Broader country coverage does not
+make these sparse references equivalent to the detailed calendars above.
+Weekly country inference remains based on matching multiple timezone offsets;
+these additions apply to yearly holiday inference.
+
 Yearly analysis treats a lack of activity on holidays as the default signal;
 pass `--activity-signal peak` when unusually high activity is the indicator you
 want to match instead. Yearly analysis defaults to public holidays and separately
@@ -317,3 +341,4 @@ results:
 
 This project is licensed under the GNU Affero General Public License v3.0 or
 later. See [LICENSE](LICENSE) for details.
+

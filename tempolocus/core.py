@@ -17,6 +17,8 @@ from pathlib import Path
 from statistics import mean, median
 from typing import Any, Iterable
 
+from .country_references import fixed_date_references
+
 
 class DetectionError(ValueError):
     """Raised when an input file cannot be interpreted."""
@@ -505,6 +507,7 @@ def infer_yearly(
         "analysis": activity_analysis,
         "assumptions": [
             "Daily buckets are compared with representative public-holiday and religious-observance calendars.",
+            "Candidates labeled fixed-date references (partial) contain selected civic anniversaries only; movable holidays and observed-day substitutions are omitted.",
             (
                 "The public-worker holiday profile adds public-sector closure days where they are distinct from general public holidays."
                 if holiday_profile == "public-worker"
@@ -1040,6 +1043,12 @@ def _candidate_holidays(
         "ET": ("ET", "Ethiopia", _ethiopia_holidays(year)),
         "ZA": ("ZA", "South Africa", _south_africa_holidays(year, easter)),
     }
+    for code, label, references in fixed_date_references(year):
+        candidates.setdefault(code, (
+            code,
+            f"{label} / fixed-date references (partial)",
+            [Holiday(day, name) for day, name in references],
+        ))
     for variant in ("Bastani", "Fasli", "Qadimi", "Shahanshahi"):
         region_id = f"IR-ZOROASTRIAN-{variant.upper()}"
         candidates[region_id] = (
@@ -2971,3 +2980,4 @@ def _algeria_holidays(year: int) -> list[Holiday]:
         ],
         _arab_islamic_holiday_set(year),
     )
+

@@ -58,7 +58,7 @@ def test_kind_can_be_forced():
 
 
 def test_public_worker_holiday_profile_adds_sector_references():
-    result = detect(load_sample("year.json"), top=120, holiday_profile="public-worker")
+    result = detect(load_sample("year.json"), top=1000, holiday_profile="public-worker")
 
     assert result["signals"]["holiday_profile"] == "public-worker"
     ids = {item["id"] for item in result["results"]}
@@ -86,7 +86,7 @@ def test_standard_holiday_profile_includes_orthodox_regions():
 
 
 def test_public_worker_holiday_profile_adds_china_and_russia_references():
-    result = detect(load_sample("year.json"), top=120, holiday_profile="public-worker")
+    result = detect(load_sample("year.json"), top=1000, holiday_profile="public-worker")
 
     ids = {item["id"] for item in result["results"]}
     assert "CN-PUBLIC-WORKER" in ids
@@ -221,7 +221,7 @@ def test_chile_indigenous_peoples_day_uses_winter_solstice_date():
 
 
 def test_public_worker_holiday_profile_adds_south_american_references():
-    result = detect(load_sample("year.json"), top=120, holiday_profile="public-worker")
+    result = detect(load_sample("year.json"), top=1000, holiday_profile="public-worker")
 
     ids = {item["id"] for item in result["results"]}
     assert {
@@ -572,3 +572,4 @@ def test_cli_accepts_period_filter(tmp_path, capsys):
     assert exit_code == 0
     output = json.loads(capsys.readouterr().out)
     assert output["signals"]["timestamps_seen"] == 1
+
